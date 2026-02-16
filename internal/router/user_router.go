@@ -31,10 +31,10 @@ func (ur *UserRouter) Register(r chi.Router) {
 	r.Use(middlewares.RequestLoggerMiddleware)
 	r.With(user.UserRegisterRequestValidator).Post("/signup", ur.userController.RegisterUser)
 	r.Post("/login", ur.userController.LoginUser)
-	r.Get("/profile/{id}", ur.userController.GetUserById)
-	r.Get("/profile", ur.userController.GetAllUsers)
+	r.With(middlewares.JwtAuthMiddleware).Get("/profile/{id}", ur.userController.GetUserById)
+	r.With(middlewares.JwtAuthMiddleware).Get("/profile", ur.userController.GetAllUsers)
 	r.With(middlewares.RateLimitMiddleware, user.UserUpdateRequestValidator).Patch("/profile/{id}", ur.userController.UpdateUser)
-	r.Delete("/profile/{id}", ur.userController.DeleteUser)
+	r.With(middlewares.JwtAuthMiddleware).Delete("/profile/{id}", ur.userController.DeleteUser)
 
 	// proxy routes
 	r.Get("/fake-store/*", utils.ProxyToService("https://fakestoreapi.com", "/fake-store"))

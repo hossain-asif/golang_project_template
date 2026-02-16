@@ -64,7 +64,7 @@ func (us *UserServiceImpl) LoginUser(email string, password string) (string, err
 	}
 
 	payload := jwt.MapClaims{
-		email: user.Email,
+		"email": user.Email,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
 	tokenString, tokenErr := token.SignedString([]byte(env.GetString("JWT_SECRET", "default_secret_key")))
