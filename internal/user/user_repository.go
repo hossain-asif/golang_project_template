@@ -12,8 +12,12 @@ type UserRepository interface {
 	Create(username string, email string, password string) error
 	GetByID(id string) (*User, error)
 	GetAll() ([]*User, error)
-	Update(id string, username string, email string) error
-	Delete(id string) error
+	Update(id string, username string, email string) (string, error)
+	SoftDelete(id string) (string, error)
+	HardDelete(id string) (string, error)
+
+
+	// user specific methods
 	GetByEmail(email string) (*User, error)
 }
 
@@ -81,7 +85,7 @@ func (u *UserRepositoryImpl) GetByID(id string) (*User, error) {
 	fmt.Println("Fetching user by id in user repository.")
 
 	// step 1: prepare the query
-	query := "SELECT id, name, email, created_at, updated_at FROM users WHERE id = ?"
+	query := "SELECT id, name, email, created_at, updated_at FROM users WHERE deleted_at IS NULL AND id = ?"
 
 	// step 2: execute the query
 	row := u.db.Raw(query, id).Row()
@@ -103,37 +107,11 @@ func (u *UserRepositoryImpl) GetByID(id string) (*User, error) {
 	return user, nil
 }
 
-func (u *UserRepositoryImpl) GetByEmail(email string) (*User, error) {
-	fmt.Println("Fetching user by email in user repository.")
-
-	// step 1: prepare the query	
-	query := "SELECT name, email, password FROM users WHERE email = ?"
-
-	// step 2: execute the query
-	row := u.db.Raw(query, email).Row()
-
-	// step 3: process the result
-	user := &User{}
-	err := row.Scan(&user.Name, &user.Email, &user.Password)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			fmt.Println("User not found.")
-			return nil, err
-		}
-		fmt.Printf("Error fetching user: %v\n", err)
-		return nil, err
-	}
-
-	// step 4: return the result
-	fmt.Printf("Fetched user: %+v\n", user)
-	return user, nil
-}
-
 func (u *UserRepositoryImpl) GetAll() ([]*User, error) {
 	fmt.Println("Fetching all users in user repository.")
 
 	// step 1: prepare the query
-	query := "SELECT id, name, email, created_at, updated_at FROM users"
+	query := "SELECT id, name, email, created_at, updated_at FROM users WHERE deleted_at IS NULL"
 
 	// step 2: execute the query
 	rows, err := u.db.Raw(query).Rows()
@@ -174,11 +152,11 @@ func (u *UserRepositoryImpl) GetAll() ([]*User, error) {
 	return users, nil
 }
 
-func (u *UserRepositoryImpl) Update(id string, username string, email string) error {
+func (u *UserRepositoryImpl) Update(id string, username string, email string) (string, error) {
 	fmt.Println("updating user in user repository.")
 
 	// step 1: prepare the query
-	query := "UPDATE users SET name = ?, email = ?, updated_at = NOW() WHERE id = ?"
+	query := "UPDATE users SET name = ?, email = ?, updated_at = NOW() WHERE deleted_at IS NULL AND id = ?"
 
 	// step 2: execute the query
 	result := u.db.Exec(query, username, email, id)
@@ -186,24 +164,53 @@ func (u *UserRepositoryImpl) Update(id string, username string, email string) er
 	// step 3: check for errors
 	if result.Error != nil {
 		fmt.Printf("Error updating user: %v\n", result.Error)
-		return result.Error
+		return "", result.Error
 	}
 
 	// step 4: evaluate the result
 	rowsAffected := result.RowsAffected
 	if rowsAffected == 0 {
 		fmt.Println("No user was updated.")
-		return nil
+		return "", fmt.Errorf("No user was updated.")
 	}
 
 	fmt.Printf("Updated user (rows affected: %d)\n",
 		rowsAffected)
 
 	// step 5: return the result
-	return nil
+	return fmt.Sprintf("User updated successfully (rows affected: %d)", rowsAffected), nil
 }
 
-func (u *UserRepositoryImpl) Delete(id string) error {
+func (u *UserRepositoryImpl) SoftDelete(id string) (string, error) {
+	fmt.Println("deleting user in user repository.")
+
+	// step 1: prepare the query
+	query := "UPDATE users SET name = ?, email = ?, deleted_at = NOW() WHERE deleted_at IS NULL AND id = ?"
+
+	// step 2: execute the query
+	result := u.db.Exec(query, id)
+
+	// step 3: check for errors
+	if result.Error != nil {
+		fmt.Printf("Error deleting user: %v\n", result.Error)
+		return "", result.Error
+	}
+
+	// step 4: evaluate the result
+	rowsAffected := result.RowsAffected
+	if rowsAffected == 0 {
+		fmt.Println("No user was deleted.")
+		return "", fmt.Errorf("No user was deleted.")
+	}
+
+	fmt.Printf("Deleted user (rows affected: %d)\n", rowsAffected)
+
+	// step 5: return the result
+	return fmt.Sprintf("Deleted user (rows affected: %d)\n",rowsAffected), nil
+}
+
+
+func (u *UserRepositoryImpl) HardDelete(id string) (string, error) {
 	fmt.Println("deleting user in user repository.")
 
 	// step 1: prepare the query
@@ -215,19 +222,45 @@ func (u *UserRepositoryImpl) Delete(id string) error {
 	// step 3: check for errors
 	if result.Error != nil {
 		fmt.Printf("Error deleting user: %v\n", result.Error)
-		return result.Error
+		return "", result.Error
 	}
 
 	// step 4: evaluate the result
 	rowsAffected := result.RowsAffected
 	if rowsAffected == 0 {
 		fmt.Println("No user was deleted.")
-		return nil
+		return "", fmt.Errorf("No user was deleted.")
 	}
 
-	fmt.Printf("Deleted user (rows affected: %d)\n",
-		rowsAffected)
+	fmt.Printf("Deleted user (rows affected: %d)\n", rowsAffected)
 
 	// step 5: return the result
-	return nil
+	return fmt.Sprintf("Deleted user (rows affected: %d)\n",rowsAffected), nil
+}
+
+
+func (u *UserRepositoryImpl) GetByEmail(email string) (*User, error) {
+	fmt.Println("Fetching user by email in user repository.")
+
+	// step 1: prepare the query
+	query := "SELECT name, email, password FROM users WHERE deleted_at IS NULL AND email = ?"
+
+	// step 2: execute the query
+	row := u.db.Raw(query, email).Row()
+
+	// step 3: process the result
+	user := &User{}
+	err := row.Scan(&user.Name, &user.Email, &user.Password)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			fmt.Println("User not found.")
+			return nil, err
+		}
+		fmt.Printf("Error fetching user: %v\n", err)
+		return nil, err
+	}
+
+	// step 4: return the result
+	fmt.Printf("Fetched user: %+v\n", user)
+	return user, nil
 }

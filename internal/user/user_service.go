@@ -2,8 +2,8 @@ package user
 
 import (
 	"fmt"
-	"go_project_structure/utils"
 	env "go_project_structure/config/env"
+	"go_project_structure/utils"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -11,10 +11,11 @@ import (
 type UserService interface {
 	CreateUser(username string, email string, password string) error
 	LoginUser(email string, password string) (string, error)
-	GetUserById(id string) error
-	GetAllUsers() error
-	UpdateUser(id string, username string, email string) error
-	DeleteUser(id string) error
+	GetUserById(id string) (*User, error)
+	GetAllUsers() ([]*User, error)
+	UpdateUser(id string, username string, email string) (string, error)
+	DeleteUser(id string) (string, error)
+	PermanentlyDeleteUser(id string) (string, error)
 }
 
 type UserServiceImpl struct {
@@ -76,26 +77,59 @@ func (us *UserServiceImpl) LoginUser(email string, password string) (string, err
 	return tokenString, nil
 }
 
-func (us *UserServiceImpl) GetUserById(id string) error {
+func (us *UserServiceImpl) GetUserById(id string) (*User, error) {
 	fmt.Println("Getting user by id in user service.")
-	us.userRepository.GetByID(id)
-	return nil
+	user, err := us.userRepository.GetByID(id)
+	if err != nil {
+		fmt.Printf("Error fetching user by id: %v\n", err)
+		return nil, err
+	}
+	return user, nil
 }
 
-func (us *UserServiceImpl) GetAllUsers() error {
+func (us *UserServiceImpl) GetAllUsers() ([]*User, error) {
 	fmt.Println("Getting all users in user service.")
-	us.userRepository.GetAll()
-	return nil
+	var users []*User
+	users, err := us.userRepository.GetAll()
+	if err != nil {
+		fmt.Printf("Error fetching all users: %v\n", err)
+		return nil, err
+	}
+	return users, nil
 }
 
-func (us *UserServiceImpl) UpdateUser(id string, username string, email string) error {
+func (us *UserServiceImpl) UpdateUser(id string, username string, email string) (string, error) {
 	fmt.Println("Updating user in user service.")
-	us.userRepository.Update(id, username, email)
-	return nil
+
+	message, err := us.userRepository.Update(id, username, email)
+	if err != nil {
+		fmt.Printf("Error updating user: %v\n", err)
+		return "", err
+	}
+
+	return message, nil
 }
 
-func (us *UserServiceImpl) DeleteUser(id string) error {
+func (us *UserServiceImpl) DeleteUser(id string) (string, error) {
 	fmt.Println("Deleting user in user service.")
-	us.userRepository.Delete(id)
-	return nil
+
+	message, err := us.userRepository.SoftDelete(id)
+	if err != nil {
+		fmt.Printf("Error deleting user: %v\n", err)
+		return "", err
+	}
+
+	return message, nil
+}
+
+func (us *UserServiceImpl) PermanentlyDeleteUser(id string) (string, error) {
+	fmt.Println("Permanently deleting user in user service.")
+
+	message, err := us.userRepository.HardDelete(id)
+	if err != nil {
+		fmt.Printf("Error permanently deleting user: %v\n", err)
+		return "", err
+	}
+
+	return message, nil
 }

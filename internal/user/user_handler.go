@@ -19,18 +19,18 @@ func NewUserController(_userService UserService) *UserController {
 
 func (uc *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
-	RequestPayload := r.Context().Value("registration_payload").(registerUserRequest)
+	RequestPayload := r.Context().Value("registration_payload").(RegisterUserRequest)
 
 	err := uc.UserService.CreateUser(
 		RequestPayload.Name,
-		RequestPayload.Email, 
+		RequestPayload.Email,
 		RequestPayload.Password,
 	)
 	if err != nil {
 		utils.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User registration failed.", err)
 		return
 	}
-	responsePayload := registerUserResponse{
+	responsePayload := RegisterUserResponse{
 		Name:  RequestPayload.Name,
 		Email: RequestPayload.Email,
 	}
@@ -44,7 +44,7 @@ func (uc *UserController) LoginUser(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid request payload", err)
 		return
 	}
-	
+
 	token, err := uc.UserService.LoginUser(requestPayload.Email, requestPayload.Password)
 	if err != nil {
 		utils.WriteJsonErrorResponse(w, http.StatusUnauthorized, "Login failed", err)
@@ -58,12 +58,22 @@ func (uc *UserController) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 func (uc *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
 	userId := chi.URLParam(r, "id")
-	uc.UserService.GetUserById(userId)
+
+	if userId == "" {
+		utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid user id", nil)
+		return
+	}
+
+	user, err := uc.UserService.GetUserById(userId)
+	if err != nil {
+		utils.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User fetch failed.", err)
+		return
+	}
 
 	response := map[string]interface{}{
 		"success": true,
 		"message": "Get user by id end point",
-		"data":    nil,
+		"data":    user,
 		"error":   nil,
 	}
 	utils.WriteJSONResponse(w, http.StatusOK, response)
@@ -71,18 +81,55 @@ func (uc *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc *UserController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	uc.UserService.GetAllUsers()
-	w.Write([]byte("Get all users end point"))
+	users, err := uc.UserService.GetAllUsers()
+	if err != nil {
+		utils.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User fetch failed.", err)
+		return
+	}
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Get all users end point",
+		"data":    users,
+		"error":   nil,
+	}
+	utils.WriteJSONResponse(w, http.StatusOK, response)
 }
 
 func (uc *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	userId := chi.URLParam(r, "id")
-	uc.UserService.UpdateUser(userId, "newusername", "newemail@example.com")
-	w.Write([]byte("User update end point"))
+	var requestPayload = UpdateUserRequest{}
+	err := utils.ReadJsonBody(r, &requestPayload)
+	if err != nil {
+		utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid request payload", err)
+		return
+	}
+	message, err := uc.UserService.UpdateUser(userId, requestPayload.Name, requestPayload.Email)
+	if err != nil {
+		utils.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User update failed.", err)
+		return
+	}
+	response := map[string]interface{}{
+		"success": true,
+		"message": message,
+		"data":    nil,
+		"error":   nil,
+	}
+	utils.WriteJSONResponse(w, http.StatusOK, response)
 }
 
 func (uc *UserController) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	userId := chi.URLParam(r, "id")
-	uc.UserService.DeleteUser(userId)
-	w.Write([]byte("User delete end point"))
+
+	message, err := uc.UserService.DeleteUser(userId)
+	if err != nil {
+		utils.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User delete failed.", err)
+		return
+	}
+	response := map[string]interface{}{
+		"success": true,
+		"message": message,
+		"data":    nil,
+		"error":   nil,
+	}
+	utils.WriteJSONResponse(w, http.StatusOK, response)
 }

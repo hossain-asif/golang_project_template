@@ -9,7 +9,7 @@ import (
 
 func UserRegisterRequestValidator(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var RequestPayload = registerUserRequest{}
+		var RequestPayload = RegisterUserRequest{}
 		if payloadErr := utils.ReadJsonBody(r, &RequestPayload); payloadErr != nil {
 			utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json encoding error.", payloadErr)
 			return
@@ -29,7 +29,7 @@ func UserRegisterRequestValidator(next http.Handler) http.Handler {
 
 func UserUpdateRequestValidator(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var RequestPayload = updateUserRequest{}
+		var RequestPayload = UpdateUserRequest{}
 		if payloadErr := utils.ReadJsonBody(r, &RequestPayload); payloadErr != nil {
 			utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json encoding error.", payloadErr)
 			return
