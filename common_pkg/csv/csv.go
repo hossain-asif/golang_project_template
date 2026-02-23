@@ -116,7 +116,7 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 	return fileName, nil
 }
 
-func UploadUserCSV(r *http.Request) ([][]string, error) {
+func UploadCSV(r *http.Request) ([][]string, error) {
 	err := r.ParseMultipartForm(10 << 20) // file size 10MB
 	if err != nil {
 		return nil, fmt.Errorf("File too large: %v", err)

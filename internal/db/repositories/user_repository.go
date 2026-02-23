@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"go_project_structure/internal/db/models"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
@@ -18,6 +19,7 @@ type UserRepository interface {
 	HardDelete(id string) (string, error)
 
 	InsertViaTnx(user *models.User) (string, error)
+	InsertViaTnxUsingBatchProcessing(users []*models.User) (string, error)
 
 	// user specific methods
 	GetByEmail(email string) (*models.User, error)
@@ -277,12 +279,11 @@ func (u *UserRepositoryImpl) GetByEmail(email string) (*models.User, error) {
 	return user, nil
 }
 
-
 func (u *UserRepositoryImpl) InsertViaTnx(user *models.User) (string, error) {
 	fmt.Println("creating user via tnx in user repository.")
 
 	// step 0: begin transaction
-	tx := u.db.Begin() 
+	tx := u.db.Begin()
 	if tx.Error != nil {
 		return "", tx.Error
 	}
@@ -334,4 +335,77 @@ func (u *UserRepositoryImpl) InsertViaTnx(user *models.User) (string, error) {
 
 	// step 6: return the result
 	return fmt.Sprintf("Created user (rows affected: %d)\n", rowsAffected), nil
+}
+
+func (u *UserRepositoryImpl) InsertViaTnxUsingBatchProcessing(users []*models.User) (string, error) {
+	fmt.Println("creating user via tnx using batch processing in user repository.")
+
+	// step 0: begin transaction
+	tx := u.db.Begin()
+	if tx.Error != nil {
+		return "", tx.Error
+	}
+
+	// step 1: prepare the query
+	query := "INSERT INTO users (name, email, password) VALUES "
+	values := []interface{}{}
+	placeholders := []string{}
+	for _, user := range users {
+		placeholders = append(placeholders, "(?, ?, ?)")
+		values = append(values, user.Name, user.Email, user.Password)
+	}
+	query += strings.Join(placeholders, ",")
+
+	// step 2: execute the query
+	result := tx.Exec(query, values...)
+
+	// step 3: check for errors
+	if result.Error != nil {
+
+		tx.Rollback()
+
+		var pgErr *pgconn.PgError
+		if errors.As(result.Error, &pgErr) {
+			switch pgErr.Code {
+			case "23505": // unique_violation
+				return "", fmt.Errorf("unique constraint violation")
+			case "23503": // foreign_key_violation
+				return "", fmt.Errorf("foreign key violation.")
+			case "23502": // not_null_violation
+				return "", fmt.Errorf("not null violation.")
+			default:
+				return "", fmt.Errorf("database error: %v", pgErr.Message)
+			}
+		}
+		return "", result.Error
+	}
+
+	// step 4: evaluate the result
+	rowsAffected := result.RowsAffected
+	if rowsAffected == 0 {
+		tx.Rollback()
+		fmt.Println("No user was created.")
+		return "", fmt.Errorf("No user was created.")
+	}
+
+	// step 5: commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		return "", err
+	}
+
+	fmt.Printf("Created user (rows affected: %d)\n",
+		rowsAffected)
+
+	// step 6: return the result
+	return fmt.Sprintf("Created user (rows affected: %d)\n", rowsAffected), nil
+
+	/*
+	Optimization
+		- If using GORM, tx.CreateInBatches(users, 1000)
+		- PostgreSQL COPY (FASTEST) : That is 10x–50x faster than INSERT.
+			```
+			COPY users (name, email, password)
+			FROM STDIN WITH CSV	
+			```
+	*/
 }

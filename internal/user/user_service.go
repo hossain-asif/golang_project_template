@@ -2,10 +2,10 @@ package user
 
 import (
 	"fmt"
-	"go_project_structure/utils/authentication"
 	env "go_project_structure/config/env"
 	"go_project_structure/internal/db/models"
 	"go_project_structure/internal/db/repositories"
+	"go_project_structure/utils/authentication"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -20,6 +20,7 @@ type UserService interface {
 	PermanentlyDeleteUser(id string) (string, error)
 
 	CreateUserViaTnx(users [][]string) (string, error)
+	CreateUserViaTnxUsingBatchProcessing(users [][]string) (string, error)
 }
 
 type UserServiceImpl struct {
@@ -135,7 +136,6 @@ func (us *UserServiceImpl) PermanentlyDeleteUser(id string) (string, error) {
 	return message, nil
 }
 
-
 func (us *UserServiceImpl) CreateUserViaTnx(users [][]string) (string, error) {
 	fmt.Println("Creating user in user service.")
 
@@ -159,6 +159,46 @@ func (us *UserServiceImpl) CreateUserViaTnx(users [][]string) (string, error) {
 			return "", err
 		}
 
+	}
+
+	return fmt.Sprintf("CSV uploaded successfully"), nil
+}
+
+func (us *UserServiceImpl) CreateUserViaTnxUsingBatchProcessing(users [][]string) (string, error) {
+	fmt.Println("Creating user in user service using batch processing.")
+
+	batchSize := 10
+	for i := 0; i < len(users); i += batchSize {
+		end := i + batchSize
+		if end > len(users) {
+			end = len(users)
+		}
+
+		batch := users[i:end]
+
+		var users []*models.User
+
+		for _, user := range batch {
+
+			password, passwordErr := authentication.HashPassword(user[2])
+			if passwordErr != nil {
+				return "", passwordErr
+			}
+
+			users = append(users, &models.User{
+				Name:     user[0],
+				Email:    user[1],
+				Password: password,
+			})
+		}
+
+		message, err := us.userRepository.InsertViaTnxUsingBatchProcessing(users)
+		if err != nil {
+			fmt.Printf("Error creating user: %v\n", err)
+			return "", err
+		}
+
+		fmt.Println(message)
 	}
 
 	return fmt.Sprintf("CSV uploaded successfully"), nil
