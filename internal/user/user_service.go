@@ -2,52 +2,53 @@ package user
 
 import (
 	"fmt"
+	"go_project_structure/utils/authentication"
 	env "go_project_structure/config/env"
-	"go_project_structure/utils"
+	"go_project_structure/internal/db/models"
+	"go_project_structure/internal/db/repositories"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type UserService interface {
-	CreateUser(username string, email string, password string) error
+	CreateUser(user *models.User) (string, error)
 	LoginUser(email string, password string) (string, error)
-	GetUserById(id string) (*User, error)
-	GetAllUsers() ([]*User, error)
-	UpdateUser(id string, username string, email string) (string, error)
+	GetUserById(id string) (*models.User, error)
+	GetAllUsers() ([]*models.User, error)
+	UpdateUser(id string, username *string, email *string) (string, error)
 	DeleteUser(id string) (string, error)
 	PermanentlyDeleteUser(id string) (string, error)
+
+	CreateUserViaTnx(users [][]string) (string, error)
 }
 
 type UserServiceImpl struct {
-	userRepository UserRepository
+	userRepository repositories.UserRepository
 }
 
-func NewUserService(_userRepository UserRepository) UserService {
+func NewUserService(_userRepository repositories.UserRepository) UserService {
 	return &UserServiceImpl{
 		userRepository: _userRepository,
 	}
 }
 
-func (us *UserServiceImpl) CreateUser(username string, email string, password string) error {
+func (us *UserServiceImpl) CreateUser(user *models.User) (string, error) {
 	fmt.Println("Creating user in user service.")
 
-	password, hashErr := utils.HashPassword(password)
+	password, hashErr := authentication.HashPassword(user.Password)
 	if hashErr != nil {
 		fmt.Printf("Error hashing password: %v\n", hashErr)
-		return hashErr
+		return "", hashErr
 	}
+	user.Password = password
 
-	err := us.userRepository.Create(
-		username,
-		email,
-		password,
-	)
+	message, err := us.userRepository.Create(user)
 
 	if err != nil {
 		fmt.Printf("Error creating user: %v\n", err)
-		return err
+		return "", err
 	}
-	return nil
+	return message, nil
 }
 
 func (us *UserServiceImpl) LoginUser(email string, password string) (string, error) {
@@ -58,7 +59,7 @@ func (us *UserServiceImpl) LoginUser(email string, password string) (string, err
 		return "", err
 	}
 
-	IsPasswordValid := utils.CheckPasswordHash(password, user.Password)
+	IsPasswordValid := authentication.CheckPasswordHash(password, user.Password)
 	if !IsPasswordValid {
 		fmt.Println("Invalid password provided.")
 		return "", fmt.Errorf("invalid credentials")
@@ -77,7 +78,7 @@ func (us *UserServiceImpl) LoginUser(email string, password string) (string, err
 	return tokenString, nil
 }
 
-func (us *UserServiceImpl) GetUserById(id string) (*User, error) {
+func (us *UserServiceImpl) GetUserById(id string) (*models.User, error) {
 	fmt.Println("Getting user by id in user service.")
 	user, err := us.userRepository.GetByID(id)
 	if err != nil {
@@ -87,9 +88,9 @@ func (us *UserServiceImpl) GetUserById(id string) (*User, error) {
 	return user, nil
 }
 
-func (us *UserServiceImpl) GetAllUsers() ([]*User, error) {
+func (us *UserServiceImpl) GetAllUsers() ([]*models.User, error) {
 	fmt.Println("Getting all users in user service.")
-	var users []*User
+	var users []*models.User
 	users, err := us.userRepository.GetAll()
 	if err != nil {
 		fmt.Printf("Error fetching all users: %v\n", err)
@@ -98,7 +99,7 @@ func (us *UserServiceImpl) GetAllUsers() ([]*User, error) {
 	return users, nil
 }
 
-func (us *UserServiceImpl) UpdateUser(id string, username string, email string) (string, error) {
+func (us *UserServiceImpl) UpdateUser(id string, username *string, email *string) (string, error) {
 	fmt.Println("Updating user in user service.")
 
 	message, err := us.userRepository.Update(id, username, email)
@@ -132,4 +133,33 @@ func (us *UserServiceImpl) PermanentlyDeleteUser(id string) (string, error) {
 	}
 
 	return message, nil
+}
+
+
+func (us *UserServiceImpl) CreateUserViaTnx(users [][]string) (string, error) {
+	fmt.Println("Creating user in user service.")
+
+	for _, user := range users {
+
+		password, hashErr := authentication.HashPassword(user[2])
+		if hashErr != nil {
+			fmt.Printf("Error hashing password: %v\n", hashErr)
+			return "", hashErr
+		}
+
+		user := &models.User{
+			Name:     user[0],
+			Email:    user[1],
+			Password: password,
+		}
+
+		_, err := us.userRepository.InsertViaTnx(user)
+		if err != nil {
+			fmt.Printf("Error creating user: %v\n", err)
+			return "", err
+		}
+
+	}
+
+	return fmt.Sprintf("CSV uploaded successfully"), nil
 }

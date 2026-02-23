@@ -1,4 +1,6 @@
-package user
+package dto
+
+import "time"
 
 type RegisterUserRequest struct {
 	Name     string `json:"name" validate:"required"`
@@ -7,13 +9,13 @@ type RegisterUserRequest struct {
 }
 
 type RegisterUserResponse struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 type UpdateUserRequest struct {
-	Name  string `json:"username"`
-	Email string `json:"email"`
+	Name  *string `json:"username"`
+	Email *string `json:"email"`
 }
 
 type LoginUserRequest struct {
@@ -23,4 +25,12 @@ type LoginUserRequest struct {
 
 type LoginUserResponse struct {
 	Token string `json:"token"`
+}
+
+type UserCSV struct {
+	ID        uint      `csv:"id"`
+	Name      string    `csv:"name"`
+	Email     string    `csv:"email"`
+	CreatedAt time.Time `csv:"created_at"`
+	UpdatedAt time.Time `csv:"updated_at"`
 }

@@ -1,4 +1,4 @@
-package utils
+package json
 
 import (
 	"encoding/json"
@@ -33,6 +33,6 @@ func WriteJsonErrorResponse(w http.ResponseWriter, statusCode int, message strin
 
 func ReadJsonBody(r *http.Request, result interface{}) error {
 	decoder := json.NewDecoder(r.Body) // Create a JSON decoder for the request body -> read Json from the request
-	decoder.DisallowUnknownFields()    // Disallow unknown fields in the JSON to prevent errors from unexpected data
+	// decoder.DisallowUnknownFields()    // Disallow unknown fields in the JSON to prevent errors from unexpected data
 	return decoder.Decode(result)      // Decode the JSON from the request body into the destination struct
 }

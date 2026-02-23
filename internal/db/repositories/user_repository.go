@@ -1,24 +1,26 @@
-package user
+package repositories
 
 import (
 	"errors"
 	"fmt"
+	"go_project_structure/internal/db/models"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
 type UserRepository interface {
-	Create(username string, email string, password string) error
-	GetByID(id string) (*User, error)
-	GetAll() ([]*User, error)
-	Update(id string, username string, email string) (string, error)
+	Create(user *models.User) (string, error)
+	GetByID(id string) (*models.User, error)
+	GetAll() ([]*models.User, error)
+	Update(id string, username *string, email *string) (string, error)
 	SoftDelete(id string) (string, error)
 	HardDelete(id string) (string, error)
 
+	InsertViaTnx(user *models.User) (string, error)
 
 	// user specific methods
-	GetByEmail(email string) (*User, error)
+	GetByEmail(email string) (*models.User, error)
 }
 
 type UserRepositoryImpl struct {
@@ -32,7 +34,7 @@ func NewUserRepository(_db *gorm.DB) UserRepository {
 	}
 }
 
-func (u *UserRepositoryImpl) Create(username string, email string, password string) error {
+func (u *UserRepositoryImpl) Create(user *models.User) (string, error) {
 	fmt.Println("creating user in user repository.")
 
 	// step 0: create a user instance
@@ -46,7 +48,7 @@ func (u *UserRepositoryImpl) Create(username string, email string, password stri
 	query := "INSERT INTO users (name, email, password) VALUES (?, ?, ?)"
 
 	// step 2: execute the query
-	result := u.db.Exec(query, username, email, password)
+	result := u.db.Exec(query, user.Name, user.Email, user.Password)
 
 	// step 3: check for errors
 	if result.Error != nil {
@@ -55,33 +57,33 @@ func (u *UserRepositoryImpl) Create(username string, email string, password stri
 		if errors.As(result.Error, &pgErr) {
 			switch pgErr.Code {
 			case "23505": // unique_violation
-				return fmt.Errorf("unique constraint violation")
+				return "", fmt.Errorf("unique constraint violation")
 			case "23503": // foreign_key_violation
-				return fmt.Errorf("foreign key violation.")
+				return "", fmt.Errorf("foreign key violation.")
 			case "23502": // not_null_violation
-				return fmt.Errorf("not null violation.")
+				return "", fmt.Errorf("not null violation.")
 			default:
-				return fmt.Errorf("database error: %v", pgErr.Message)
+				return "", fmt.Errorf("database error: %v", pgErr.Message)
 			}
 		}
-		return result.Error
+		return "", result.Error
 	}
 
 	// step 4: evaluate the result
 	rowsAffected := result.RowsAffected
 	if rowsAffected == 0 {
 		fmt.Println("No user was created.")
-		return nil
+		return "", fmt.Errorf("No user was created.")
 	}
 
 	fmt.Printf("Created user (rows affected: %d)\n",
 		rowsAffected)
 
 	// step 5: return the result
-	return nil
+	return fmt.Sprintf("Created user (rows affected: %d)\n", rowsAffected), nil
 }
 
-func (u *UserRepositoryImpl) GetByID(id string) (*User, error) {
+func (u *UserRepositoryImpl) GetByID(id string) (*models.User, error) {
 	fmt.Println("Fetching user by id in user repository.")
 
 	// step 1: prepare the query
@@ -91,7 +93,7 @@ func (u *UserRepositoryImpl) GetByID(id string) (*User, error) {
 	row := u.db.Raw(query, id).Row()
 
 	// step 3: process the result
-	user := &User{}
+	user := &models.User{}
 	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -107,7 +109,7 @@ func (u *UserRepositoryImpl) GetByID(id string) (*User, error) {
 	return user, nil
 }
 
-func (u *UserRepositoryImpl) GetAll() ([]*User, error) {
+func (u *UserRepositoryImpl) GetAll() ([]*models.User, error) {
 	fmt.Println("Fetching all users in user repository.")
 
 	// step 1: prepare the query
@@ -134,9 +136,9 @@ func (u *UserRepositoryImpl) GetAll() ([]*User, error) {
 	// }
 
 	// step 4: process the result
-	var users []*User
+	var users []*models.User
 	for rows.Next() {
-		var user User
+		var user models.User
 		err := u.db.ScanRows(rows, &user)
 		if err != nil {
 			fmt.Printf("Error scanning row: %v\n", err)
@@ -152,14 +154,26 @@ func (u *UserRepositoryImpl) GetAll() ([]*User, error) {
 	return users, nil
 }
 
-func (u *UserRepositoryImpl) Update(id string, username string, email string) (string, error) {
+func (u *UserRepositoryImpl) Update(id string, username *string, email *string) (string, error) {
 	fmt.Println("updating user in user repository.")
 
 	// step 1: prepare the query
-	query := "UPDATE users SET name = ?, email = ?, updated_at = NOW() WHERE deleted_at IS NULL AND id = ?"
+	query := "UPDATE users SET "
+	args := []interface{}{}
+	if username != nil {
+		query += "name = ?, "
+		args = append(args, *username)
+	}
+	if email != nil {
+		query += "email = ?, "
+		args = append(args, *email)
+	}
+	query += "updated_at = NOW() "
+	query += "WHERE deleted_at IS NULL AND id = ?"
+	args = append(args, id)
 
 	// step 2: execute the query
-	result := u.db.Exec(query, username, email, id)
+	result := u.db.Exec(query, args...)
 
 	// step 3: check for errors
 	if result.Error != nil {
@@ -185,7 +199,7 @@ func (u *UserRepositoryImpl) SoftDelete(id string) (string, error) {
 	fmt.Println("deleting user in user repository.")
 
 	// step 1: prepare the query
-	query := "UPDATE users SET name = ?, email = ?, deleted_at = NOW() WHERE deleted_at IS NULL AND id = ?"
+	query := "UPDATE users SET deleted_at = NOW() WHERE deleted_at IS NULL AND id = ?"
 
 	// step 2: execute the query
 	result := u.db.Exec(query, id)
@@ -206,9 +220,8 @@ func (u *UserRepositoryImpl) SoftDelete(id string) (string, error) {
 	fmt.Printf("Deleted user (rows affected: %d)\n", rowsAffected)
 
 	// step 5: return the result
-	return fmt.Sprintf("Deleted user (rows affected: %d)\n",rowsAffected), nil
+	return fmt.Sprintf("Deleted user (rows affected: %d)\n", rowsAffected), nil
 }
-
 
 func (u *UserRepositoryImpl) HardDelete(id string) (string, error) {
 	fmt.Println("deleting user in user repository.")
@@ -235,11 +248,10 @@ func (u *UserRepositoryImpl) HardDelete(id string) (string, error) {
 	fmt.Printf("Deleted user (rows affected: %d)\n", rowsAffected)
 
 	// step 5: return the result
-	return fmt.Sprintf("Deleted user (rows affected: %d)\n",rowsAffected), nil
+	return fmt.Sprintf("Deleted user (rows affected: %d)\n", rowsAffected), nil
 }
 
-
-func (u *UserRepositoryImpl) GetByEmail(email string) (*User, error) {
+func (u *UserRepositoryImpl) GetByEmail(email string) (*models.User, error) {
 	fmt.Println("Fetching user by email in user repository.")
 
 	// step 1: prepare the query
@@ -249,7 +261,7 @@ func (u *UserRepositoryImpl) GetByEmail(email string) (*User, error) {
 	row := u.db.Raw(query, email).Row()
 
 	// step 3: process the result
-	user := &User{}
+	user := &models.User{}
 	err := row.Scan(&user.Name, &user.Email, &user.Password)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -263,4 +275,62 @@ func (u *UserRepositoryImpl) GetByEmail(email string) (*User, error) {
 	// step 4: return the result
 	fmt.Printf("Fetched user: %+v\n", user)
 	return user, nil
+}
+
+func (u *UserRepositoryImpl) InsertViaTnx(user *models.User) (string, error) {
+	fmt.Println("creating user via tnx in user repository.")
+
+	// step 0: begin transaction
+	tx := u.db.Begin() 
+	if tx.Error != nil {
+		return "", tx.Error
+	}
+
+	// step 1: prepare the query
+	query := "INSERT INTO users (name, email, password) VALUES (?, ?, ?)"
+
+	// step 2: execute the query
+	result := tx.Exec(query, user.Name, user.Email, user.Password)
+
+	// step 3: check for errors
+	if result.Error != nil {
+
+		tx.Rollback()
+
+		var pgErr *pgconn.PgError
+		if errors.As(result.Error, &pgErr) {
+			switch pgErr.Code {
+			case "23505": // unique_violation
+				return "", fmt.Errorf("unique constraint violation")
+			case "23503": // foreign_key_violation
+				return "", fmt.Errorf("foreign key violation.")
+			case "23502": // not_null_violation
+				return "", fmt.Errorf("not null violation.")
+			default:
+				return "", fmt.Errorf("database error: %v", pgErr.Message)
+			}
+		}
+		return "", result.Error
+	}
+
+	// step 4: evaluate the result
+	rowsAffected := result.RowsAffected
+	if rowsAffected == 0 {
+
+		tx.Rollback()
+
+		fmt.Println("No user was created.")
+		return "", fmt.Errorf("No user was created.")
+	}
+
+	// step 5: commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		return "", err
+	}
+
+	fmt.Printf("Created user (rows affected: %d)\n",
+		rowsAffected)
+
+	// step 6: return the result
+	return fmt.Sprintf("Created user (rows affected: %d)\n", rowsAffected), nil
 }
