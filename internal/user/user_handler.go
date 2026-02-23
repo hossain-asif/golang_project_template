@@ -225,6 +225,19 @@ func (uc *UserController) DownloadFileHandler(w http.ResponseWriter, r *http.Req
 	http.ServeFile(w, r, filePath)
 }
 
+/*
+Controller
+  → Read entire CSV into memory ([][]string) : If CSV has 1M rows → whole thing loads into memory
+  → Service loops every row
+  → Repository opens transaction PER USER: For 10,000 users → 10,000 transactions
+	That is: Slow + Expensive + Heavy on WAL + Bad for performance
+		- Each user insert:
+			- Begin TX
+			- Execute INSERT
+			- Commit
+  → Insert 1 row
+  → Commit
+*/
 func (uc *UserController) UploadUserCSV(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Content-Type:", r.Header.Get("Content-Type"))

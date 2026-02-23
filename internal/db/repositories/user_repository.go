@@ -277,6 +277,7 @@ func (u *UserRepositoryImpl) GetByEmail(email string) (*models.User, error) {
 	return user, nil
 }
 
+
 func (u *UserRepositoryImpl) InsertViaTnx(user *models.User) (string, error) {
 	fmt.Println("creating user via tnx in user repository.")
 
