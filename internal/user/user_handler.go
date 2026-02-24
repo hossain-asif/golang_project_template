@@ -225,10 +225,6 @@ func (uc *UserController) DownloadFileHandler(w http.ResponseWriter, r *http.Req
 	http.ServeFile(w, r, filePath)
 }
 
-
-/*
-	still loading entire CSV into memory first. For 1M rows: dangerous
-*/
 func (uc *UserController) UploadUserCSV(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Content-Type:", r.Header.Get("Content-Type"))
@@ -238,14 +234,12 @@ func (uc *UserController) UploadUserCSV(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	records, err := common_csv.UploadCSV(r)
+	err := common_csv.UploadAndStreamCSV(r, 10, uc.UserService.CreateUserViaTnxUsingBatchProcessing)
 	if err != nil {
 		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "CSV upload failed.", err)
 		return
 	}
 
-	message, err := uc.UserService.CreateUserViaTnxUsingBatchProcessing(records)
-
-	json.WriteJsonSuccessResponse(w, http.StatusCreated, message, nil)
+	json.WriteJsonSuccessResponse(w, http.StatusCreated, "CSV uploaded successfully.", nil)
 
 }

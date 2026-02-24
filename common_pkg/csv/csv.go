@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"reflect"
 	"time"
 )
@@ -116,69 +115,28 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 	return fileName, nil
 }
 
-func UploadCSV(r *http.Request) ([][]string, error) {
+func UploadAndStreamCSV(r *http.Request, batchSize int, process func([][]string) error) error {
 	err := r.ParseMultipartForm(10 << 20) // file size 10MB
 	if err != nil {
-		return nil, fmt.Errorf("File too large: %v", err)
+		return fmt.Errorf("File too large: %v", err)
 	}
 
-	uploadedFile, uploadedFileHeader, fileErr := r.FormFile("file")
+	uploadedFile, _, fileErr := r.FormFile("file")
 	if fileErr != nil {
-		return nil, fmt.Errorf("File too large: %v", fileErr)
+		return fmt.Errorf("File too large: %v", fileErr)
 	}
 	defer uploadedFile.Close()
 
-	// Save file in uploads directory
-	filePath := filepath.Join("upload", uploadedFileHeader.Filename)
-
-	// Check if file already exists
-	if _, err := os.Stat(filePath); !os.IsNotExist(err) {
-		return nil, fmt.Errorf("File already exists: %v", err)
-	}
-
-	// Create file
-	dstFile, err := os.Create(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create file %v", err)
-	}
-	defer dstFile.Close()
-
-	_, err = io.Copy(dstFile, uploadedFile)
-	if err != nil {
-		return nil, err
-	}
-
-	// Open file
-    savedFile, fileOpenErr := os.Open(filePath)
-	if fileOpenErr != nil {
-		return nil, fmt.Errorf("Failed to open file %v", fileOpenErr)
-	}
-	defer savedFile.Close()
-
-	// Read all records
-	// ReadAll() is not recommended because
-	// - It loads entire CSV into memory
-	// - Bad for 1M+ rows
-	// records, err := reader.ReadAll()
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// remove header : first row that contains column names
-	// if len(records) > 1 {
-	// 	records = records[1:]
-	// }
-
-	reader := csv.NewReader(savedFile)
+	reader := csv.NewReader(uploadedFile)
 
 	records := make([][]string, 0)
 
 	// remove header : first row that contains column names
 	csvHeader, csvHeaderErr := reader.Read()
 	if csvHeaderErr != nil {
-		return nil, fmt.Errorf("invalid CSV header: %v", csvHeaderErr)
+		return fmt.Errorf("invalid CSV header: %v", csvHeaderErr)
 	}
-	
+
 	fmt.Println("csv header: ", csvHeader)
 
 	for {
@@ -187,9 +145,26 @@ func UploadCSV(r *http.Request) ([][]string, error) {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("error reading CSV: %v", err)
+			return fmt.Errorf("error reading CSV: %v", err)
 		}
 		records = append(records, record)
+
+		if len(records) == batchSize {
+			if err := process(records); err != nil {
+				return err
+			}
+			records = records[:0]
+		}
+
 	}
-	return records, nil
+
+	// remaining records that are less than batchSize
+	if len(records) > 0 {
+		if err := process(records); err != nil {
+			return err
+		}
+		records = records[:0]
+	}
+
+	return nil
 }
