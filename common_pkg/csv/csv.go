@@ -3,6 +3,7 @@ package csv
 import (
 	"encoding/csv"
 	"fmt"
+	workerpool "go_project_structure/common_pkg/worker_pool"
 	"io"
 	"net/http"
 	"os"
@@ -115,7 +116,30 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 	return fileName, nil
 }
 
-func UploadAndStreamCSV(r *http.Request, batchSize int, process func([][]string) error) error {
+
+
+// newCSVBatchPool creates a new worker pool for parallel CSV processing.
+// It takes a workerCount (number of workers to spawn) and a process function (which takes a [][]string representing a batch of CSV records).
+// The process function is executed in parallel by the worker pool.
+// The returned worker pool is already started, and will be stopped when the program exits.
+// The worker pool is responsible for processing the CSV records in parallel.
+// The process function should return an error if any processing fails.
+// The worker pool will stop all workers if any processing fails.
+// The worker pool will not return any results, as it is designed to be used for side-effecting operations such as database writes or file I/O.
+func newCSVBatchPool(workerCount int, process func([][]string) error) *workerpool.WorkerPool[[][]string, struct{}] {
+	pool := workerpool.NewWorkerPool[[][]string, struct{}](
+		workerCount,
+		workerCount,
+		func(batch [][]string) (struct{}, error) {
+			return struct{}{}, process(batch)
+		},
+	)
+	pool.Start()
+	return pool
+}
+
+
+func UploadAndStreamCSV(r *http.Request, batchSize int, workerCount int, process func([][]string) error) error {
 	err := r.ParseMultipartForm(10 << 20) // file size 10MB
 	if err != nil {
 		return fmt.Errorf("File too large: %v", err)
@@ -128,8 +152,11 @@ func UploadAndStreamCSV(r *http.Request, batchSize int, process func([][]string)
 	defer uploadedFile.Close()
 
 	reader := csv.NewReader(uploadedFile)
+	
+	// Create worker pool for csv parellel processing
+	pool := newCSVBatchPool(workerCount, process)
 
-	records := make([][]string, 0)
+	records := make([][]string, 0, batchSize)
 
 	// remove header : first row that contains column names
 	csvHeader, csvHeaderErr := reader.Read()
@@ -145,26 +172,32 @@ func UploadAndStreamCSV(r *http.Request, batchSize int, process func([][]string)
 			break
 		}
 		if err != nil {
+			pool.Done()
 			return fmt.Errorf("error reading CSV: %v", err)
 		}
 		records = append(records, record)
 
 		if len(records) == batchSize {
-			if err := process(records); err != nil {
-				return err
-			}
+			batch := make([][]string, len(records))
+			copy(batch, records)
+			pool.Submit(batch)
 			records = records[:0]
 		}
-
 	}
 
 	// remaining records that are less than batchSize
 	if len(records) > 0 {
-		if err := process(records); err != nil {
-			return err
+		pool.Submit(records)
+	}
+	pool.Done() // no more jobs
+
+	// Collect results/errors
+	var firstErr error
+	for result := range pool.Results() {
+		if result.Err != nil && firstErr == nil {
+			firstErr = result.Err
 		}
-		records = records[:0]
 	}
 
-	return nil
+	return firstErr
 }

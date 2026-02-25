@@ -234,7 +234,7 @@ func (uc *UserController) UploadUserCSV(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err := common_csv.UploadAndStreamCSV(r, 10, uc.UserService.CreateUserViaTnxUsingBatchProcessing)
+	err := common_csv.UploadAndStreamCSV(r, 10, 10, uc.UserService.CreateUserViaTnxUsingBatchProcessing)
 	if err != nil {
 		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "CSV upload failed.", err)
 		return

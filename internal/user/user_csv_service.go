@@ -6,9 +6,7 @@ import (
 	"go_project_structure/utils/authentication"
 )
 
-type UserCSVService interface {
-	CreateUserViaTnxUsingBatchProcessing(batch [][]string) error
-}
+
 
 func (us *UserServiceImpl) CreateUserViaTnxUsingBatchProcessing(batch [][]string) error {
 	fmt.Println("Creating user in user service using batch processing.")
