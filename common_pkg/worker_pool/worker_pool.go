@@ -2,6 +2,14 @@ package workerpool
 
 import "sync"
 
+/*
+ This is thread pool pattern with fixed number of workers. For go-lang it is called Worker Pool or Goroutine Pool.
+ 	- Thread Pool Pattern — fixed number of workers reused across jobs, no new goroutine per job
+	- Fan-out — one producer distributes work across multiple workers
+	- Fan-in — multiple workers funnel results into one result channel
+	- Pipeline Pattern — data flows through stages: read → batch → process → collect
+*/
+
 type Job[T any] struct {
 	Data T
 }
@@ -27,7 +35,6 @@ func NewWorkerPool[I any, O any](workerCount int, bufferSize int, process func(I
 		WorkerCount: workerCount,
 	}
 }
-
 
 // Start spins up workers
 func (wp *WorkerPool[I, O]) Start() {
@@ -62,7 +69,6 @@ func (wp *WorkerPool[I, O]) Done() {
 func (wp *WorkerPool[I, O]) Results() <-chan Result[O] {
 	return wp.ResultChan
 }
-
 
 func NewPool[I any](workerCount int, process func(I) error) *WorkerPool[I, struct{}] {
 	pool := NewWorkerPool[I, struct{}](
