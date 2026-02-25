@@ -117,28 +117,6 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 }
 
 
-
-// newCSVBatchPool creates a new worker pool for parallel CSV processing.
-// It takes a workerCount (number of workers to spawn) and a process function (which takes a [][]string representing a batch of CSV records).
-// The process function is executed in parallel by the worker pool.
-// The returned worker pool is already started, and will be stopped when the program exits.
-// The worker pool is responsible for processing the CSV records in parallel.
-// The process function should return an error if any processing fails.
-// The worker pool will stop all workers if any processing fails.
-// The worker pool will not return any results, as it is designed to be used for side-effecting operations such as database writes or file I/O.
-func newCSVBatchPool(workerCount int, process func([][]string) error) *workerpool.WorkerPool[[][]string, struct{}] {
-	pool := workerpool.NewWorkerPool[[][]string, struct{}](
-		workerCount,
-		workerCount,
-		func(batch [][]string) (struct{}, error) {
-			return struct{}{}, process(batch)
-		},
-	)
-	pool.Start()
-	return pool
-}
-
-
 func UploadAndStreamCSV(r *http.Request, batchSize int, workerCount int, process func([][]string) error) error {
 	err := r.ParseMultipartForm(10 << 20) // file size 10MB
 	if err != nil {
@@ -154,7 +132,7 @@ func UploadAndStreamCSV(r *http.Request, batchSize int, workerCount int, process
 	reader := csv.NewReader(uploadedFile)
 	
 	// Create worker pool for csv parellel processing
-	pool := newCSVBatchPool(workerCount, process)
+	pool := workerpool.NewPool(workerCount, process)
 
 	records := make([][]string, 0, batchSize)
 

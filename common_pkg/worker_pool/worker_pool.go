@@ -62,3 +62,16 @@ func (wp *WorkerPool[I, O]) Done() {
 func (wp *WorkerPool[I, O]) Results() <-chan Result[O] {
 	return wp.ResultChan
 }
+
+
+func NewPool[I any](workerCount int, process func(I) error) *WorkerPool[I, struct{}] {
+	pool := NewWorkerPool[I, struct{}](
+		workerCount,
+		workerCount,
+		func(data I) (struct{}, error) {
+			return struct{}{}, process(data)
+		},
+	)
+	pool.Start()
+	return pool
+}
