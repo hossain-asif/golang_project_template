@@ -52,7 +52,7 @@ func (ur *UserRouter) v1() http.Handler {
     })
 
 	// proxy
-	r.Get("/fake-store/*", proxy.ProxyToService("https://fakestoreapi.com", "/fake-store"))
+	r.Get("/fake-store/*", proxy.ProxyToService("https://fakestoreapi.com", "/api/v1/fake-store"))
 
 	return r
 }

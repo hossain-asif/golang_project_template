@@ -92,7 +92,6 @@ func (us *UserServiceImpl) GetUserById(id string) (*models.User, error) {
 
 func (us *UserServiceImpl) GetAllUsers() ([]*models.User, error) {
 	fmt.Println("Getting all users in user service.")
-	var users []*models.User
 	users, err := us.userRepository.GetAll()
 	if err != nil {
 		fmt.Printf("Error fetching all users: %v\n", err)
@@ -140,6 +139,8 @@ func (us *UserServiceImpl) PermanentlyDeleteUser(id string) (string, error) {
 func (us *UserServiceImpl) CreateUserViaTnx(users [][]string) (string, error) {
 	fmt.Println("Creating user in user service.")
 
+	var messages [][]string
+
 	for _, user := range users {
 
 		password, hashErr := authentication.HashPassword(user[2])
@@ -154,14 +155,14 @@ func (us *UserServiceImpl) CreateUserViaTnx(users [][]string) (string, error) {
 			Password: password,
 		}
 
-		_, err := us.userRepository.InsertViaTnx(user)
+		message, err := us.userRepository.InsertViaTnx(user)
 		if err != nil {
 			fmt.Printf("Error creating user: %v\n", err)
 			return "", err
 		}
-
+		messages = append(messages, []string{message})
 	}
 
-	return fmt.Sprintf("CSV uploaded successfully"), nil
+	return fmt.Sprintf("CSV uploaded successfully. messages: %s\n", messages), nil
 }
 

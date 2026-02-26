@@ -26,7 +26,12 @@ func NewUserController(_userService UserService) *UserController {
 
 func (uc *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
-	RequestPayload := r.Context().Value("registration_payload").(dto.RegisterUserRequest)
+	RequestPayload, ok := r.Context().Value("registration_payload").(dto.RegisterUserRequest)
+	if !ok {
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid request context", nil)
+		return
+	}
+
 	reqId := r.Context().Value("requestId")
 	fmt.Println("request id: ", reqId)
 
@@ -77,7 +82,13 @@ func (uc *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
 	userId := chi.URLParam(r, "id")
 
 	if userId == "" {
-		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid user id", nil)
+		json.WriteJsonErrorResponse(
+			w, 
+			http.StatusBadRequest, 
+			"Invalid user id", 
+			fmt.Errorf("user id is required"),
+		)
+
 		return
 	}
 
@@ -121,7 +132,11 @@ func (uc *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	userId := chi.URLParam(r, "id")
 
-	requestPayload := r.Context().Value("update_payload").(dto.UpdateUserRequest)
+	requestPayload, ok := r.Context().Value("update_payload").(dto.UpdateUserRequest)
+	if !ok {
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid request context", nil)
+		return
+	}
 
 	message, err := uc.UserService.UpdateUser(userId, requestPayload.Name, requestPayload.Email)
 	if err != nil {
@@ -212,7 +227,7 @@ func (uc *UserController) UploadUserCSV(w http.ResponseWriter, r *http.Request) 
 
 	fmt.Println("Content-Type:", r.Header.Get("Content-Type"))
 
-	if !strings.Contains(r.Header.Get("content-type"), "multipart/form-data") {
+	if !strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
 		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Content-Type must be multipart/form-data", fmt.Errorf("Content-Type must be multipart/form-data"))
 		return
 	}
