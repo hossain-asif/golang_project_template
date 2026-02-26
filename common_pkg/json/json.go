@@ -27,7 +27,12 @@ func WriteJsonErrorResponse(w http.ResponseWriter, statusCode int, message strin
 	response["success"] = false
 	response["message"] = message
 	response["data"] = nil
-	response["error"] = err.Error()
+	response["error"] = func() string {
+		if err != nil {
+			return err.Error()
+		}
+		return message
+	}()
 	return WriteJSONResponse(w, statusCode, response)
 }
 

@@ -1,12 +1,10 @@
 package repositories
 
 import (
-	"errors"
 	"fmt"
 	"go_project_structure/internal/db/models"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -48,20 +46,9 @@ func (u *UserRepositoryImpl) Create(user *models.User) (string, error) {
 	// step 3: check for errors
 	if result.Error != nil {
 		// fmt.Printf("Error creating user: %v\n", result.Error)
-		var pgErr *pgconn.PgError
-		if errors.As(result.Error, &pgErr) {
-			switch pgErr.Code {
-			case "23505": // unique_violation
-				return "", fmt.Errorf("unique constraint violation")
-			case "23503": // foreign_key_violation
-				return "", fmt.Errorf("foreign key violation.")
-			case "23502": // not_null_violation
-				return "", fmt.Errorf("not null violation.")
-			default:
-				return "", fmt.Errorf("database error: %v", pgErr.Message)
-			}
-		}
-		return "", result.Error
+		err := handlePgError(result.Error)
+		fmt.Printf("Error creating user: %v\n", err)
+		return "", err
 	}
 
 	// step 4: evaluate the result
@@ -143,9 +130,6 @@ func (u *UserRepositoryImpl) GetAll() ([]*models.User, error) {
 	}
 
 	// step 5: return the result
-	for _, user := range users {
-		fmt.Println(user)
-	}
 	return users, nil
 }
 
@@ -292,20 +276,9 @@ func (u *UserRepositoryImpl) InsertViaTnx(user *models.User) (string, error) {
 
 		tx.Rollback()
 
-		var pgErr *pgconn.PgError
-		if errors.As(result.Error, &pgErr) {
-			switch pgErr.Code {
-			case "23505": // unique_violation
-				return "", fmt.Errorf("unique constraint violation")
-			case "23503": // foreign_key_violation
-				return "", fmt.Errorf("foreign key violation.")
-			case "23502": // not_null_violation
-				return "", fmt.Errorf("not null violation.")
-			default:
-				return "", fmt.Errorf("database error: %v", pgErr.Message)
-			}
-		}
-		return "", result.Error
+		err := handlePgError(result.Error)
+		fmt.Printf("Error creating user: %v\n", err)
+		return "", err
 	}
 
 	// step 4: evaluate the result
@@ -357,20 +330,9 @@ func (u *UserRepositoryImpl) InsertViaTnxUsingBatchProcessing(users []*models.Us
 
 		tx.Rollback()
 
-		var pgErr *pgconn.PgError
-		if errors.As(result.Error, &pgErr) {
-			switch pgErr.Code {
-			case "23505": // unique_violation
-				return "", fmt.Errorf("unique constraint violation")
-			case "23503": // foreign_key_violation
-				return "", fmt.Errorf("foreign key violation.")
-			case "23502": // not_null_violation
-				return "", fmt.Errorf("not null violation.")
-			default:
-				return "", fmt.Errorf("database error: %v", pgErr.Message)
-			}
-		}
-		return "", result.Error
+		err := handlePgError(result.Error)
+		fmt.Printf("Error creating user: %v\n", err)
+		return "", err
 	}
 
 	// step 4: evaluate the result
@@ -393,12 +355,12 @@ func (u *UserRepositoryImpl) InsertViaTnxUsingBatchProcessing(users []*models.Us
 	return fmt.Sprintf("Created user (rows affected: %d)\n", rowsAffected), nil
 
 	/*
-	Optimization
-		- If using GORM, tx.CreateInBatches(users, 1000)
-		- PostgreSQL COPY (FASTEST) : That is 10x–50x faster than INSERT.
-			```
-			COPY users (name, email, password)
-			FROM STDIN WITH CSV	
-			```
+		Optimization
+			- If using GORM, tx.CreateInBatches(users, 1000)
+			- PostgreSQL COPY (FASTEST) : That is 10x–50x faster than INSERT.
+				```
+				COPY users (name, email, password)
+				FROM STDIN WITH CSV
+				```
 	*/
 }

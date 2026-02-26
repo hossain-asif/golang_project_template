@@ -15,19 +15,15 @@ func RequestLoggerMiddleware(next http.Handler) http.Handler {
 
 		var reqId uuid.UUID
 
-		// If X-Request-Id header is present, use it
-		if r.Header.Get("Request-Id") != "" {
-			reqId, _ = uuid.Parse(r.Header.Get("Request-Id"))
-		}
-
-		// Check if X-Request-Id header is present
-		if r.Header.Get("Request-Id") == "" {
+		if header := r.Header.Get("Request-Id"); header != "" {
+			reqId, _ = uuid.Parse(header)
+		} else {
 			reqId = uuid.New()
 		}
 
 		// Add the UUID to the context
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, "requestId", reqId.String())
+		ctx = context.WithValue(ctx, CtxRequestID, reqId.String())
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

@@ -52,7 +52,7 @@ func JwtAuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, "email", userEmail)
+		ctx = context.WithValue(ctx, CtxUserEmail, userEmail)
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

@@ -76,7 +76,11 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 	}
 
 	// Write the header row into the CSV file
-	writer.Write(headers)
+	writeHeaderErr := writer.Write(headers)
+	if writeHeaderErr != nil {
+		return "", writeHeaderErr
+	}
+
 
 	// Loop over each element (each struct instance) in the slice
 	for i := 0; i < val.Len(); i++ {
@@ -110,7 +114,10 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 		}
 
 		// Write the row into CSV file
-		writer.Write(row)
+		writeRowErr := writer.Write(row)
+		if writeRowErr != nil {
+			return "", writeRowErr
+		}
 	}
 
 	// Return the generated filename if everything succeeded

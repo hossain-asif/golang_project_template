@@ -149,13 +149,13 @@ func (us *UserServiceImpl) CreateUserViaTnx(users [][]string) (string, error) {
 			return "", hashErr
 		}
 
-		user := &models.User{
+		newUser := &models.User{
 			Name:     user[0],
 			Email:    user[1],
 			Password: password,
 		}
 
-		message, err := us.userRepository.InsertViaTnx(user)
+		message, err := us.userRepository.InsertViaTnx(newUser)
 		if err != nil {
 			fmt.Printf("Error creating user: %v\n", err)
 			return "", err

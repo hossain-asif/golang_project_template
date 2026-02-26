@@ -4,8 +4,10 @@ import (
 	"fmt"
 	common_csv "go_project_structure/common_pkg/csv"
 	"go_project_structure/common_pkg/json"
+	common_middlewares "go_project_structure/common_pkg/middlewares"
 	"go_project_structure/internal/db/models"
 	"go_project_structure/internal/dto"
+	"go_project_structure/internal/middlewares"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -26,13 +28,13 @@ func NewUserController(_userService UserService) *UserController {
 
 func (uc *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
-	RequestPayload, ok := r.Context().Value("registration_payload").(dto.RegisterUserRequest)
+	RequestPayload, ok := r.Context().Value(middlewares.CtxRegistrationPayload).(dto.RegisterUserRequest)
 	if !ok {
 		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid request context", nil)
 		return
 	}
 
-	reqId := r.Context().Value("requestId")
+	reqId := r.Context().Value(common_middlewares.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	user := &models.User{
@@ -54,7 +56,7 @@ func (uc *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc *UserController) LoginUser(w http.ResponseWriter, r *http.Request) {
-	reqId := r.Context().Value("requestId")
+	reqId := r.Context().Value(common_middlewares.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	var requestPayload = dto.LoginUserRequest{}
@@ -76,16 +78,16 @@ func (uc *UserController) LoginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
-	reqId := r.Context().Value("requestId")
+	reqId := r.Context().Value(common_middlewares.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	userId := chi.URLParam(r, "id")
 
 	if userId == "" {
 		json.WriteJsonErrorResponse(
-			w, 
-			http.StatusBadRequest, 
-			"Invalid user id", 
+			w,
+			http.StatusBadRequest,
+			"Invalid user id",
 			fmt.Errorf("user id is required"),
 		)
 
@@ -98,18 +100,12 @@ func (uc *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]interface{}{
-		"success": true,
-		"message": "Get user by id end point",
-		"data":    user,
-		"error":   nil,
-	}
-	json.WriteJSONResponse(w, http.StatusOK, response)
+	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get user by id end point", user)
 
 }
 
 func (uc *UserController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	reqId := r.Context().Value("requestId")
+	reqId := r.Context().Value(common_middlewares.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	users, err := uc.UserService.GetAllUsers()
@@ -117,22 +113,17 @@ func (uc *UserController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User fetch failed.", err)
 		return
 	}
-	response := map[string]interface{}{
-		"success": true,
-		"message": "Get all users end point",
-		"data":    users,
-		"error":   nil,
-	}
-	json.WriteJSONResponse(w, http.StatusOK, response)
+
+	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get all users end point", users)
 }
 
 func (uc *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	reqId := r.Context().Value("requestId")
+	reqId := r.Context().Value(common_middlewares.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	userId := chi.URLParam(r, "id")
 
-	requestPayload, ok := r.Context().Value("update_payload").(dto.UpdateUserRequest)
+	requestPayload, ok := r.Context().Value(middlewares.CtxUpdatePayload).(dto.UpdateUserRequest)
 	if !ok {
 		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid request context", nil)
 		return
@@ -143,17 +134,12 @@ func (uc *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User update failed.", err)
 		return
 	}
-	response := map[string]interface{}{
-		"success": true,
-		"message": message,
-		"data":    nil,
-		"error":   nil,
-	}
-	json.WriteJSONResponse(w, http.StatusOK, response)
+
+	json.WriteJsonSuccessResponse(w, http.StatusOK, message, nil)
 }
 
 func (uc *UserController) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	reqId := r.Context().Value("requestId")
+	reqId := r.Context().Value(common_middlewares.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	userId := chi.URLParam(r, "id")
@@ -163,17 +149,12 @@ func (uc *UserController) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User delete failed.", err)
 		return
 	}
-	response := map[string]interface{}{
-		"success": true,
-		"message": message,
-		"data":    nil,
-		"error":   nil,
-	}
-	json.WriteJSONResponse(w, http.StatusOK, response)
+
+	json.WriteJsonSuccessResponse(w, http.StatusOK, message, nil)
 }
 
 func (uc *UserController) ExportUsersCSV(w http.ResponseWriter, r *http.Request) {
-	reqId := r.Context().Value("requestId")
+	reqId := r.Context().Value(common_middlewares.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	fileName, err := uc.UserService.ExportUsersAsCSV()
@@ -187,13 +168,7 @@ func (uc *UserController) ExportUsersCSV(w http.ResponseWriter, r *http.Request)
 		fileName,
 	)
 
-	response := map[string]interface{}{
-		"success": true,
-		"message": "Get all users end point",
-		"data":    downloadUrl,
-		"error":   nil,
-	}
-	json.WriteJSONResponse(w, http.StatusOK, response)
+	json.WriteJsonSuccessResponse(w, http.StatusOK, "Export Users CSV end point", downloadUrl)
 
 }
 

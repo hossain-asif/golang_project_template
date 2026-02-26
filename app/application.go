@@ -85,8 +85,9 @@ func (app *Application) Run() error {
 	}()
 
 	fmt.Println("server running on port", app.Config.Addr, "...")
-	if err := server.ListenAndServe(); err != http.ErrServerClosed {
-		fmt.Println("server error:", err)
+	if serverErr := server.ListenAndServe(); err != http.ErrServerClosed {
+		fmt.Println("server error:", serverErr)
+		return serverErr
 	}
 	fmt.Println("server stopped")
 	return err

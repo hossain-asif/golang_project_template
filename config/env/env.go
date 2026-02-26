@@ -17,23 +17,31 @@ func Load() {
 	}
 }
 
-func getKey(key string, fallback any) any {
+func getKey(key string) any {
 	value, ok := os.LookupEnv(key)
 
 	if !ok {
-		return fallback
+		return ""
 	}
 	return value
 }
 
 func GetString(key string, fallback string) string {
-	value := getKey(key, fallback)
+	value := getKey(key)
+
+	if value == "" {
+		return fallback
+	}
 	return value.(string)
 }
 
 func GetInt(key string, fallback int) int {
 
-	value := getKey(key, fallback)
+	value := getKey(key)
+
+	if value == "" {
+		return fallback
+	}
 
 	intValue, err := strconv.Atoi(value.(string))
 	if err != nil {
@@ -46,7 +54,11 @@ func GetInt(key string, fallback int) int {
 
 func GetBool(key string, fallback bool) bool {
 
-	value := getKey(key, fallback)
+	value := getKey(key)
+
+	if value == "" {
+		return fallback
+	}
 
 	boolValue, err := strconv.ParseBool(value.(string))
 	if err != nil {
@@ -57,7 +69,11 @@ func GetBool(key string, fallback bool) bool {
 }
 
 func GetFloat(key string, fallback float64) float64 {
-	value := getKey(key, fallback)
+	value := getKey(key)
+
+	if value == "" {
+		return fallback
+	}
 
 	floatValue, err := strconv.ParseFloat(value.(string), 64)
 	if err != nil {

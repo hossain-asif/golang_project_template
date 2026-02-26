@@ -7,6 +7,8 @@ import (
 	"golang.org/x/time/rate"
 )
 
+
+// global rate limiter: One aggressive user exhausts the bucket for everyone.
 var limiter = rate.NewLimiter(rate.Every(1*time.Second), 5) // 5 request per second
 func RateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
