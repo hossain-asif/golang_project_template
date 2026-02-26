@@ -40,23 +40,32 @@ func NewApplication(config Config) Application {
 	}
 }
 
+func initModuleRegistry(ctx context.Context) (*chi.Mux, error) {
+	db, err := dbConfig.SetupDB()
+	if err != nil {
+		fmt.Println("Error setting up database.")
+		return nil, err
+	}
+
+	rootRouter := chi.NewRouter()
+
+	var allTasks []scheduler.Task
+	for _, m := range router.Modules {
+		m.RegisterRoutes(db, rootRouter)
+		allTasks = append(allTasks, m.RegisterTasks(db)...)
+	}
+	go scheduler.TaskAssignment(ctx, allTasks)
+
+	return rootRouter, nil
+}
+
 func (app *Application) Run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	// start scheduler in background
-	go scheduler.TaskAssignment(ctx)
-
-	rootRouter := chi.NewRouter()
-
-	db, err := dbConfig.SetupDB()
+	rootRouter, err := initModuleRegistry(ctx)
 	if err != nil {
-		fmt.Println("Error setting up database.")
 		return err
-	}
-
-	for _, registerFn := range router.DomainRegistries {
-		registerFn(db, rootRouter)
 	}
 
 	server := &http.Server{
@@ -66,20 +75,19 @@ func (app *Application) Run() error {
 		WriteTimeout: 10 * time.Second, // Set write timeout to 10 seconds
 	}
 
-    // shutdown server when ctx is cancelled
-    go func() {
-        <-ctx.Done()
-        fmt.Println("shutting down server...")
-        shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
-        defer shutdownCancel()
-        server.Shutdown(shutdownCtx)
-    }()
+	// shutdown server when ctx is cancelled
+	go func() {
+		<-ctx.Done()
+		fmt.Println("shutting down server...")
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownCancel()
+		server.Shutdown(shutdownCtx)
+	}()
 
-    fmt.Println("server running on port", app.Config.Addr, "...")
-    if err := server.ListenAndServe(); err != http.ErrServerClosed {
-        fmt.Println("server error:", err)
-    }
-    fmt.Println("server stopped")
-	// return server.ListenAndServe()
+	fmt.Println("server running on port", app.Config.Addr, "...")
+	if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		fmt.Println("server error:", err)
+	}
+	fmt.Println("server stopped")
 	return err
 }

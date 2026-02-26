@@ -14,7 +14,7 @@ type RegisterUserResponse struct {
 }
 
 type UpdateUserRequest struct {
-	Name  *string `json:"username"`
+	Name  *string `json:"name"`
 	Email *string `json:"email"`
 }
 

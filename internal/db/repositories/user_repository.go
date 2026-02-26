@@ -39,13 +39,6 @@ func NewUserRepository(_db *gorm.DB) UserRepository {
 func (u *UserRepositoryImpl) Create(user *models.User) (string, error) {
 	fmt.Println("creating user in user repository.")
 
-	// step 0: create a user instance
-	// user := &models.User{
-	// 	Name:     username,
-	// 	Email:    email,
-	// 	Password: password,
-	// }
-
 	// step 1: prepare the query
 	query := "INSERT INTO users (name, email, password) VALUES (?, ?, ?)"
 

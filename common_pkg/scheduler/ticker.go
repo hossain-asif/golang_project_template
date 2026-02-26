@@ -15,10 +15,16 @@ type Task struct {
 
 type Ticker struct{}
 
-func New() *Ticker {
+func NewTicker() *Ticker {
     return &Ticker{}
 }
 
+/*
+ Run starts a goroutine that runs the given task function at the specified interval.
+ If the context is canceled, the goroutine will stop and print a message indicating that it was stopped.
+ If a previous run of the task function is still in progress when the next tick occurs, the goroutine will skip that run and print a message indicating that it was skipped.
+ If the task function panics, the goroutine will recover and print a message indicating that it panicked.
+ */
 func (t *Ticker) run(ctx context.Context, task Task) {
     ticker := time.NewTicker(task.Interval)
     defer ticker.Stop()

@@ -1,32 +1,21 @@
-package router
+package user
 
 import (
-	"go_project_structure/internal/db/repositories"
-	"go_project_structure/internal/middlewares"
-	"go_project_structure/internal/user"
-	"go_project_structure/common_pkg/proxy"
 	common_middlewares "go_project_structure/common_pkg/middlewares"
+	"go_project_structure/common_pkg/proxy"
+	"go_project_structure/internal/middlewares"
 
 	"github.com/go-chi/chi/v5"
-	"gorm.io/gorm"
 )
 
 type UserRouter struct {
-	userController *user.UserController
+	userController *UserController
 }
 
-func NewUserRouter(_userController *user.UserController) *UserRouter {
+func NewUserRouter(_userController *UserController) *UserRouter {
 	return &UserRouter{
 		userController: _userController,
 	}
-}
-
-func RegisterRoutes(db *gorm.DB, router chi.Router) *UserRouter {
-	ur := repositories.NewUserRepository(db)
-	us := user.NewUserService(ur)
-	uc := user.NewUserController(us)
-	uRouter := NewUserRouter(uc)
-	return uRouter
 }
 
 func (ur *UserRouter) Register(r chi.Router) {
