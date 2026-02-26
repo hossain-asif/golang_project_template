@@ -37,7 +37,7 @@ func (m *UserModule) RegisterTasks(db *gorm.DB) []scheduler.Task {
 		},
 		{
 			Name: "auto-export-csv",
-			Interval: 5 * time.Second,
+			Interval: 50 * time.Minute,
 			Fn: func(ctx context.Context) error {
 				_, err := m.svc.ExportUsersAsCSV()
 				return err

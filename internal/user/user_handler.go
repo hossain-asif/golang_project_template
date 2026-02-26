@@ -161,15 +161,14 @@ func (uc *UserController) ExportUsersCSV(w http.ResponseWriter, r *http.Request)
 	reqId := r.Context().Value("requestId")
 	fmt.Println("request id: ", reqId)
 
-
-	fileName, err := uc.UserService.ExportUsersAsCSV() 
+	fileName, err := uc.UserService.ExportUsersAsCSV()
 	if err != nil {
 		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "CSV export failed.", err)
 		return
 	}
 
 	downloadUrl := fmt.Sprintf(
-		"http://localhost:3000/profile/download?file=%s",
+		"http://localhost:3000/api/v1/profile/download?file=%s",
 		fileName,
 	)
 
