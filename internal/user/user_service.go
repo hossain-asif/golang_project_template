@@ -19,6 +19,7 @@ type UserService interface {
 	DeleteUser(id string) (string, error)
 	PermanentlyDeleteUser(id string) (string, error)
 
+	ExportUsersAsCSV() (string, error)
 	CreateUserViaTnx(users [][]string) (string, error)
 	CreateUserViaTnxUsingBatchProcessing(users [][]string) error
 }

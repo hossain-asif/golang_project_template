@@ -161,24 +161,8 @@ func (uc *UserController) ExportUsersCSV(w http.ResponseWriter, r *http.Request)
 	reqId := r.Context().Value("requestId")
 	fmt.Println("request id: ", reqId)
 
-	users, err := uc.UserService.GetAllUsers()
-	if err != nil {
-		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User fetch failed.", err)
-		return
-	}
 
-	var userCSV []dto.UserCSV
-	for _, user := range users {
-		userCSV = append(userCSV, dto.UserCSV{
-			ID:        user.ID,
-			Name:      user.Name,
-			Email:     user.Email,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-		})
-	}
-
-	fileName, err := common_csv.ExportToCSV("users", userCSV)
+	fileName, err := uc.UserService.ExportUsersAsCSV() 
 	if err != nil {
 		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "CSV export failed.", err)
 		return

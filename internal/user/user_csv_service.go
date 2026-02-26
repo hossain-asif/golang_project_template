@@ -2,11 +2,37 @@ package user
 
 import (
 	"fmt"
+	common_csv "go_project_structure/common_pkg/csv"
 	"go_project_structure/internal/db/models"
+	"go_project_structure/internal/dto"
 	"go_project_structure/utils/authentication"
 )
 
+func (us *UserServiceImpl) ExportUsersAsCSV() (string, error) {
+	users, err := us.userRepository.GetAll()
+	if err != nil {
+		return "", err
+	}
 
+	var userCSV []dto.UserCSV
+	for _, user := range users {
+		userCSV = append(userCSV, dto.UserCSV{
+			ID:        user.ID,
+			Name:      user.Name,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		})
+	}
+
+	fileName, err := common_csv.ExportToCSV("users", userCSV)
+	if err != nil {
+		return "", err
+	}
+
+	return fileName, nil
+
+}
 
 func (us *UserServiceImpl) CreateUserViaTnxUsingBatchProcessing(batch [][]string) error {
 	fmt.Println("Creating user in user service using batch processing.")

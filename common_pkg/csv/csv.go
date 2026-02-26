@@ -34,7 +34,8 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 
 	// Create filename with timestamp (contains : which is invalid in Windows filenames.)
 	// alternative: use time.Now().Format("20060102_150405")
-	fileName := "exports/" + filePrefix + "_" + time.Now().Format("2006-01-02 15:04:05") + ".csv"
+	// fileName := "exports/" + filePrefix + "_" + time.Now().Format("2006-01-02 15:04:05") + ".csv"
+	fileName := "exports/" + filePrefix + "_" + time.Now().Format("20060102_150405") + ".csv"
 
 	// Create a new file in the filesystem. If file already exists, it will be overwritten.
 	file, err := os.Create(fileName)
@@ -116,7 +117,6 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 	return fileName, nil
 }
 
-
 func UploadAndStreamCSV(r *http.Request, batchSize int, workerCount int, process func([][]string) error) error {
 	err := r.ParseMultipartForm(10 << 20) // file size 10MB
 	if err != nil {
@@ -130,7 +130,7 @@ func UploadAndStreamCSV(r *http.Request, batchSize int, workerCount int, process
 	defer uploadedFile.Close()
 
 	reader := csv.NewReader(uploadedFile)
-	
+
 	// Create worker pool for csv parellel processing
 	pool := workerpool.NewPool(workerCount, process)
 
