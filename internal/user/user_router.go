@@ -4,6 +4,7 @@ import (
 	common_middlewares "go_project_structure/common_pkg/middlewares"
 	"go_project_structure/common_pkg/proxy"
 	"go_project_structure/internal/middlewares"
+	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -19,42 +20,56 @@ func NewUserRouter(_userController *UserController) *UserRouter {
 }
 
 func (ur *UserRouter) Register(r chi.Router) {
+    r.Mount("/api/v1", ur.v1())
+    r.Mount("/api/v2", ur.v2())
+}
+
+
+func (ur *UserRouter) v1() http.Handler {
+	r := chi.NewRouter()
+
 	r.Use(common_middlewares.RequestLoggerMiddleware)
 
-    r.Route("/api/v1", func(r chi.Router) {
-		r.With(middlewares.UserRegisterRequestValidator).
-			Post("/signup", ur.userController.RegisterUser)
-		r.Post("/login", ur.userController.LoginUser)
+	// Public
+	r.With(middlewares.UserRegisterRequestValidator).
+		Post("/signup", ur.userController.RegisterUser)
+	r.Post("/login", ur.userController.LoginUser)
 
-		r.With(common_middlewares.JwtAuthMiddleware).
-			Get("/profile/{id}", ur.userController.GetUserById)
+	// Protected (JWT required)
+    r.Group(func(r chi.Router) {
+        r.Use(common_middlewares.JwtAuthMiddleware)
+        r.Get("/profile", ur.userController.GetAllUsers)
+        r.Get("/profile/export", ur.userController.ExportUsersCSV)
+        r.Get("/profile/download", ur.userController.DownloadFileHandler)
+        r.Post("/profile/upload", ur.userController.UploadUserCSV)
 
-		r.With(common_middlewares.JwtAuthMiddleware).
-			Get("/profile", ur.userController.GetAllUsers)
-
-		r.With(common_middlewares.RateLimitMiddleware, middlewares.UserUpdateRequestValidator).
-			Patch("/profile/{id}", ur.userController.UpdateUser)
-
-		r.With(common_middlewares.JwtAuthMiddleware).
-			Delete("/profile/{id}", ur.userController.DeleteUser)
-
-		r.Get("/profile/export", ur.userController.ExportUsersCSV)
-		r.Get("/profile/download", ur.userController.DownloadFileHandler)
-
-		r.Post("/profile/upload", ur.userController.UploadUserCSV)
-
-		// proxy routes
-		r.Get("/fake-store/*", proxy.ProxyToService("https://fakestoreapi.com", "/fake-store"))
-	})
-
-    r.Route("/api/v2", func(r chi.Router) {
-        r.With(middlewares.UserRegisterRequestValidator).
-            Post("/signup", ur.userController.RegisterUser)
-        r.Post("/login", ur.userController.LoginUser)
-        r.With(common_middlewares.RateLimitMiddleware, middlewares.UserUpdateRequestValidator).
-            Patch("/profile/{id}", ur.userController.UpdateUser)
-        r.With(common_middlewares.JwtAuthMiddleware).
-            Get("/profile", ur.userController.GetAllUsers)
+        r.Route("/profile/{id}", func(r chi.Router) {
+            r.Get("/", ur.userController.GetUserById)
+            r.Delete("/", ur.userController.DeleteUser)
+            r.With(common_middlewares.RateLimitMiddleware, middlewares.UserUpdateRequestValidator).
+                Patch("/", ur.userController.UpdateUser)
+        })
     })
 
+	// proxy
+	r.Get("/fake-store/*", proxy.ProxyToService("https://fakestoreapi.com", "/fake-store"))
+
+	return r
+}
+
+
+func (ur *UserRouter) v2() http.Handler {
+	r := chi.NewRouter()
+
+	r.With(middlewares.UserRegisterRequestValidator).
+		Post("/signup", ur.userController.RegisterUser)
+	r.Post("/login", ur.userController.LoginUser)
+	r.With(common_middlewares.RateLimitMiddleware, middlewares.UserUpdateRequestValidator).
+		Patch("/profile/{id}", ur.userController.UpdateUser)
+	r.With(common_middlewares.JwtAuthMiddleware).
+		Get("/profile", ur.userController.GetAllUsers)
+	r.With(common_middlewares.JwtAuthMiddleware).
+		Get("/profile/{id}", ur.userController.GetUserById)
+
+	return r
 }
