@@ -3,8 +3,9 @@ package middlewares
 import (
 	"context"
 	"fmt"
-	"go_project_structure/internal/dto"
 	"go_project_structure/common_pkg/json"
+	"go_project_structure/internal/dto"
+	enums "go_project_structure/utils/enums"
 	"net/http"
 )
 
@@ -21,7 +22,7 @@ func UserRegisterRequestValidator(next http.Handler) http.Handler {
 
 		// context can be used to pass the validated payload to the handler for further processing
 		req_context := r.Context()                                                    // parent context -> get the context from the request
-		ctx := context.WithValue(req_context, CtxRegistrationPayload, RequestPayload) // create a new context with the validated payload
+		ctx := context.WithValue(req_context, enums.CtxRegistrationPayload, RequestPayload) // create a new context with the validated payload
 		r = r.WithContext(ctx)                                                        // create a new request with the new context
 
 		next.ServeHTTP(w, r)
@@ -40,7 +41,7 @@ func UserUpdateRequestValidator(next http.Handler) http.Handler {
 		// validation logic for the user registration payload
 
 		req_context := r.Context()                                              // parent context -> get the context from the request
-		ctx := context.WithValue(req_context, CtxUpdatePayload, RequestPayload) // create a new context with the validated payload
+		ctx := context.WithValue(req_context, enums.CtxUpdatePayload, RequestPayload) // create a new context with the validated payload
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

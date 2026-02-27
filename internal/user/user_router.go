@@ -1,7 +1,6 @@
 package user
 
 import (
-	common_middlewares "go_project_structure/common_pkg/middlewares"
 	"go_project_structure/common_pkg/proxy"
 	"go_project_structure/internal/middlewares"
 	"net/http"
@@ -20,15 +19,14 @@ func NewUserRouter(_userController *UserController) *UserRouter {
 }
 
 func (ur *UserRouter) Register(r chi.Router) {
-    r.Mount("/api/v1", ur.v1())
-    r.Mount("/api/v2", ur.v2())
+	r.Mount("/api/v1", ur.v1())
+	r.Mount("/api/v2", ur.v2())
 }
-
 
 func (ur *UserRouter) v1() http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(common_middlewares.RequestLoggerMiddleware)
+	r.Use(middlewares.RequestLoggerMiddleware)
 
 	// Public
 	r.With(middlewares.UserRegisterRequestValidator).
@@ -36,20 +34,20 @@ func (ur *UserRouter) v1() http.Handler {
 	r.Post("/login", ur.userController.LoginUser)
 
 	// Protected (JWT required)
-    r.Group(func(r chi.Router) {
-        r.Use(common_middlewares.JwtAuthMiddleware)
-        r.Get("/profile", ur.userController.GetAllUsers)
-        r.Get("/profile/export", ur.userController.ExportUsersCSV)
-        r.Get("/profile/download", ur.userController.DownloadFileHandler)
-        r.Post("/profile/upload", ur.userController.UploadUserCSV)
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.JwtAuthMiddleware)
+		r.Get("/profile", ur.userController.GetAllUsers)
+		r.Get("/profile/export", ur.userController.ExportUsersCSV)
+		r.Get("/profile/download", ur.userController.DownloadFileHandler)
+		r.Post("/profile/upload", ur.userController.UploadUserCSV)
 
-        r.Route("/profile/{id}", func(r chi.Router) {
-            r.Get("/", ur.userController.GetUserById)
-            r.Delete("/", ur.userController.DeleteUser)
-            r.With(common_middlewares.RateLimitMiddleware, middlewares.UserUpdateRequestValidator).
-                Patch("/", ur.userController.UpdateUser)
-        })
-    })
+		r.Route("/profile/{id}", func(r chi.Router) {
+			r.Get("/", ur.userController.GetUserById)
+			r.Delete("/", ur.userController.DeleteUser)
+			r.With(middlewares.RateLimitMiddleware, middlewares.UserUpdateRequestValidator).
+				Patch("/", ur.userController.UpdateUser)
+		})
+	})
 
 	// proxy
 	r.Get("/fake-store/*", proxy.ProxyToService("https://fakestoreapi.com", "/api/v1/fake-store"))
@@ -57,19 +55,31 @@ func (ur *UserRouter) v1() http.Handler {
 	return r
 }
 
-
 func (ur *UserRouter) v2() http.Handler {
 	r := chi.NewRouter()
 
+	r.Use(middlewares.RequestLoggerMiddleware)
+
+	// Public
 	r.With(middlewares.UserRegisterRequestValidator).
 		Post("/signup", ur.userController.RegisterUser)
 	r.Post("/login", ur.userController.LoginUser)
-	r.With(common_middlewares.RateLimitMiddleware, middlewares.UserUpdateRequestValidator).
-		Patch("/profile/{id}", ur.userController.UpdateUser)
-	r.With(common_middlewares.JwtAuthMiddleware).
-		Get("/profile", ur.userController.GetAllUsers)
-	r.With(common_middlewares.JwtAuthMiddleware).
-		Get("/profile/{id}", ur.userController.GetUserById)
+
+	// Protected (JWT required)
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.JwtAuthMiddleware)
+		r.Get("/profile", ur.userController.GetAllUsers)
+		r.Get("/profile/export", ur.userController.ExportUsersCSV)
+		r.Get("/profile/download", ur.userController.DownloadFileHandler)
+		r.Post("/profile/upload", ur.userController.UploadUserCSV)
+
+		r.Route("/profile/{id}", func(r chi.Router) {
+			r.Get("/", ur.userController.GetUserById)
+			r.Delete("/", ur.userController.DeleteUser)
+			r.With(middlewares.RateLimitMiddleware, middlewares.UserUpdateRequestValidator).
+				Patch("/", ur.userController.UpdateUser)
+		})
+	})
 
 	return r
 }

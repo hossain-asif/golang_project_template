@@ -1,4 +1,4 @@
-package common_middlewares
+package middlewares
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	env "go_project_structure/config/env"
+	enums "go_project_structure/utils/enums"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -52,7 +53,7 @@ func JwtAuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, CtxUserEmail, userEmail)
+		ctx = context.WithValue(ctx, enums.CtxUserEmail, userEmail)
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

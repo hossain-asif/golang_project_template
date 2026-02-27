@@ -1,8 +1,9 @@
-package common_middlewares
+package middlewares
 
 import (
 	"context"
 	"fmt"
+	enums "go_project_structure/utils/enums"
 	"net/http"
 	"time"
 
@@ -23,7 +24,7 @@ func RequestLoggerMiddleware(next http.Handler) http.Handler {
 
 		// Add the UUID to the context
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, CtxRequestID, reqId.String())
+		ctx = context.WithValue(ctx, enums.CtxRequestID, reqId.String())
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

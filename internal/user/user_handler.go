@@ -4,10 +4,9 @@ import (
 	"fmt"
 	common_csv "go_project_structure/common_pkg/csv"
 	"go_project_structure/common_pkg/json"
-	common_middlewares "go_project_structure/common_pkg/middlewares"
 	"go_project_structure/internal/db/models"
 	"go_project_structure/internal/dto"
-	"go_project_structure/internal/middlewares"
+	enums "go_project_structure/utils/enums"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -28,13 +27,13 @@ func NewUserController(_userService UserService) *UserController {
 
 func (uc *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
-	RequestPayload, ok := r.Context().Value(middlewares.CtxRegistrationPayload).(dto.RegisterUserRequest)
+	RequestPayload, ok := r.Context().Value(enums.CtxRegistrationPayload).(dto.RegisterUserRequest)
 	if !ok {
 		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid request context", nil)
 		return
 	}
 
-	reqId := r.Context().Value(common_middlewares.CtxRequestID)
+	reqId := r.Context().Value(enums.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	user := &models.User{
@@ -56,7 +55,7 @@ func (uc *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc *UserController) LoginUser(w http.ResponseWriter, r *http.Request) {
-	reqId := r.Context().Value(common_middlewares.CtxRequestID)
+	reqId := r.Context().Value(enums.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	var requestPayload = dto.LoginUserRequest{}
@@ -66,7 +65,7 @@ func (uc *UserController) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := uc.UserService.LoginUser(requestPayload.Email, requestPayload.Password)
+	token, err := uc.UserService.LoginUser(&requestPayload)
 	if err != nil {
 		json.WriteJsonErrorResponse(w, http.StatusUnauthorized, "Login failed", err)
 		return
@@ -74,11 +73,11 @@ func (uc *UserController) LoginUser(w http.ResponseWriter, r *http.Request) {
 	responsePayload := dto.LoginUserResponse{
 		Token: token,
 	}
-	json.WriteJsonSuccessResponse(w, http.StatusOK, "Login successful", responsePayload)
+	json.WriteJsonSuccessResponse(w, http.StatusOK, "user login successfully", responsePayload)
 }
 
 func (uc *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
-	reqId := r.Context().Value(common_middlewares.CtxRequestID)
+	reqId := r.Context().Value(enums.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	userId := chi.URLParam(r, "id")
@@ -90,7 +89,6 @@ func (uc *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
 			"Invalid user id",
 			fmt.Errorf("user id is required"),
 		)
-
 		return
 	}
 
@@ -105,7 +103,7 @@ func (uc *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc *UserController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	reqId := r.Context().Value(common_middlewares.CtxRequestID)
+	reqId := r.Context().Value(enums.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	users, err := uc.UserService.GetAllUsers()
@@ -118,18 +116,18 @@ func (uc *UserController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	reqId := r.Context().Value(common_middlewares.CtxRequestID)
+	reqId := r.Context().Value(enums.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	userId := chi.URLParam(r, "id")
 
-	requestPayload, ok := r.Context().Value(middlewares.CtxUpdatePayload).(dto.UpdateUserRequest)
+	requestPayload, ok := r.Context().Value(enums.CtxUpdatePayload).(dto.UpdateUserRequest)
 	if !ok {
 		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid request context", nil)
 		return
 	}
 
-	message, err := uc.UserService.UpdateUser(userId, requestPayload.Name, requestPayload.Email)
+	message, err := uc.UserService.UpdateUser(userId, &requestPayload)
 	if err != nil {
 		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User update failed.", err)
 		return
@@ -139,7 +137,7 @@ func (uc *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc *UserController) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	reqId := r.Context().Value(common_middlewares.CtxRequestID)
+	reqId := r.Context().Value(enums.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	userId := chi.URLParam(r, "id")
@@ -154,7 +152,7 @@ func (uc *UserController) DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc *UserController) ExportUsersCSV(w http.ResponseWriter, r *http.Request) {
-	reqId := r.Context().Value(common_middlewares.CtxRequestID)
+	reqId := r.Context().Value(enums.CtxRequestID)
 	fmt.Println("request id: ", reqId)
 
 	fileName, err := uc.UserService.ExportUsersAsCSV()

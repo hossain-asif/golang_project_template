@@ -5,6 +5,7 @@ import (
 	env "go_project_structure/config/env"
 	"go_project_structure/internal/db/models"
 	"go_project_structure/internal/db/repositories"
+	"go_project_structure/internal/dto"
 	"go_project_structure/utils/authentication"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -12,10 +13,10 @@ import (
 
 type UserService interface {
 	CreateUser(user *models.User) (string, error)
-	LoginUser(email string, password string) (string, error)
+	LoginUser(loginPayload *dto.LoginUserRequest) (string, error)
 	GetUserById(id string) (*models.User, error)
 	GetAllUsers() ([]*models.User, error)
-	UpdateUser(id string, username *string, email *string) (string, error)
+	UpdateUser(id string, updatePayload *dto.UpdateUserRequest) (string, error)
 	DeleteUser(id string) (string, error)
 	PermanentlyDeleteUser(id string) (string, error)
 
@@ -53,15 +54,15 @@ func (us *UserServiceImpl) CreateUser(user *models.User) (string, error) {
 	return message, nil
 }
 
-func (us *UserServiceImpl) LoginUser(email string, password string) (string, error) {
+func (us *UserServiceImpl) LoginUser(loginPayload *dto.LoginUserRequest) (string, error) {
 	fmt.Println("Logging in user in user service.")
-	user, err := us.userRepository.GetByEmail(email)
+	user, err := us.userRepository.GetByEmail(loginPayload.Email)
 	if err != nil {
 		fmt.Printf("Error fetching user by email: %v\n", err)
 		return "", err
 	}
 
-	IsPasswordValid := authentication.CheckPasswordHash(password, user.Password)
+	IsPasswordValid := authentication.CheckPasswordHash(loginPayload.Password, user.Password)
 	if !IsPasswordValid {
 		fmt.Println("Invalid password provided.")
 		return "", fmt.Errorf("invalid credentials")
@@ -100,10 +101,10 @@ func (us *UserServiceImpl) GetAllUsers() ([]*models.User, error) {
 	return users, nil
 }
 
-func (us *UserServiceImpl) UpdateUser(id string, username *string, email *string) (string, error) {
+func (us *UserServiceImpl) UpdateUser(id string, updatePayload *dto.UpdateUserRequest) (string, error) {
 	fmt.Println("Updating user in user service.")
 
-	message, err := us.userRepository.Update(id, username, email)
+	message, err := us.userRepository.Update(id, updatePayload)
 	if err != nil {
 		fmt.Printf("Error updating user: %v\n", err)
 		return "", err

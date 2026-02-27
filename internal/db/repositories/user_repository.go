@@ -3,6 +3,8 @@ package repositories
 import (
 	"fmt"
 	"go_project_structure/internal/db/models"
+	"go_project_structure/internal/dto"
+	"go_project_structure/utils/pg"
 	"strings"
 
 	"gorm.io/gorm"
@@ -12,7 +14,7 @@ type UserRepository interface {
 	Create(user *models.User) (string, error)
 	GetByID(id string) (*models.User, error)
 	GetAll() ([]*models.User, error)
-	Update(id string, username *string, email *string) (string, error)
+	Update(id string, updatePayload *dto.UpdateUserRequest) (string, error)
 	SoftDelete(id string) (string, error)
 	HardDelete(id string) (string, error)
 
@@ -46,7 +48,7 @@ func (u *UserRepositoryImpl) Create(user *models.User) (string, error) {
 	// step 3: check for errors
 	if result.Error != nil {
 		// fmt.Printf("Error creating user: %v\n", result.Error)
-		err := handlePgError(result.Error)
+		err := pg.HandlePgError(result.Error)
 		fmt.Printf("Error creating user: %v\n", err)
 		return "", err
 	}
@@ -133,19 +135,19 @@ func (u *UserRepositoryImpl) GetAll() ([]*models.User, error) {
 	return users, nil
 }
 
-func (u *UserRepositoryImpl) Update(id string, username *string, email *string) (string, error) {
+func (u *UserRepositoryImpl) Update(id string, updatePayload *dto.UpdateUserRequest) (string, error) {
 	fmt.Println("updating user in user repository.")
 
 	// step 1: prepare the query
 	query := "UPDATE users SET "
 	args := []interface{}{}
-	if username != nil {
+	if updatePayload.Name != nil {
 		query += "name = ?, "
-		args = append(args, *username)
+		args = append(args, *updatePayload.Name)
 	}
-	if email != nil {
+	if updatePayload.Email != nil {
 		query += "email = ?, "
-		args = append(args, *email)
+		args = append(args, *updatePayload.Email)
 	}
 	query += "updated_at = NOW() "
 	query += "WHERE deleted_at IS NULL AND id = ?"
@@ -276,7 +278,7 @@ func (u *UserRepositoryImpl) InsertViaTnx(user *models.User) (string, error) {
 
 		tx.Rollback()
 
-		err := handlePgError(result.Error)
+		err := pg.HandlePgError(result.Error)
 		fmt.Printf("Error creating user: %v\n", err)
 		return "", err
 	}
@@ -330,7 +332,7 @@ func (u *UserRepositoryImpl) InsertViaTnxUsingBatchProcessing(users []*models.Us
 
 		tx.Rollback()
 
-		err := handlePgError(result.Error)
+		err := pg.HandlePgError(result.Error)
 		fmt.Printf("Error creating user: %v\n", err)
 		return "", err
 	}

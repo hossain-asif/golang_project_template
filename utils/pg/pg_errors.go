@@ -1,4 +1,4 @@
-package repositories
+package pg
 
 import (
 	"errors"
@@ -7,7 +7,12 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-func handlePgError(err error) error {
+func HandlePgError(err error) error {
+
+	if err == nil {
+		return nil
+	}
+
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		switch pgErr.Code {

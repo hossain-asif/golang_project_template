@@ -2,10 +2,10 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"go_project_structure/common_pkg/scheduler"
-	dbConfig "go_project_structure/config/db"
+	dbConfig "go_project_structure/config/database"
 	config "go_project_structure/config/env"
+	"go_project_structure/config/logger"
 	"go_project_structure/internal/router"
 	"os/signal"
 	"syscall"
@@ -41,9 +41,26 @@ func NewApplication(config Config) Application {
 }
 
 func initModuleRegistry(ctx context.Context) (*chi.Mux, error) {
+
+	// setup mongodb 
+	hook, err := dbConfig.SetupMongoDB()
+	if err != nil {
+		return nil, err
+	}
+	logger.AddHook(hook)
+
+	// set up postgres db
 	db, err := dbConfig.SetupDB()
 	if err != nil {
-		fmt.Println("Error setting up database.")
+
+		logger.Log.WithFields(map[string]interface{}{
+			// "layer":     "",
+			"module":    "app",
+			"component": "application",
+			"method":    "initModuleRegistry",
+			"error":     err,
+		}).Error("Error setting up database.")
+
 		return nil, err
 	}
 
@@ -60,14 +77,20 @@ func initModuleRegistry(ctx context.Context) (*chi.Mux, error) {
 }
 
 func (app *Application) Run() error {
+	// shutdown server on SIGINT/SIGTERM
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
+	// logger setup
+	logger.InitLogger()
+
+	// initialize module registry
 	rootRouter, err := initModuleRegistry(ctx)
 	if err != nil {
 		return err
 	}
 
+	// server configuration
 	server := &http.Server{
 		Addr:         app.Config.Addr,
 		Handler:      rootRouter,
@@ -78,17 +101,45 @@ func (app *Application) Run() error {
 	// shutdown server when ctx is cancelled
 	go func() {
 		<-ctx.Done()
-		fmt.Println("shutting down server...")
+
+		logger.Log.WithFields(map[string]interface{}{
+			// "layer":     "",
+			"module":    "app",
+			"component": "application",
+			"method":    "Run",
+		}).Warn("shutting down server...")
+
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer shutdownCancel()
 		server.Shutdown(shutdownCtx)
 	}()
 
-	fmt.Println("server running on port", app.Config.Addr, "...")
-	if serverErr := server.ListenAndServe(); err != http.ErrServerClosed {
-		fmt.Println("server error:", serverErr)
+	logger.Log.WithFields(map[string]interface{}{
+		// "layer":     "",
+		"module":    "app",
+		"component": "application",
+		"method":    "Run",
+		"port":      app.Config.Addr,
+	}).Info("server running on given port.")
+
+	if serverErr := server.ListenAndServe(); serverErr != http.ErrServerClosed {
+		logger.Log.WithFields(map[string]interface{}{
+			// "layer":     "",
+			"module":    "app",
+			"component": "application",
+			"method":    "Run",
+			"error":     serverErr,
+		}).Error("server initialization failed")
+
 		return serverErr
 	}
-	fmt.Println("server stopped")
+
+	logger.Log.WithFields(map[string]interface{}{
+		// "layer":     "",
+		"module":    "app",
+		"component": "application",
+		"method":    "Run",
+	}).Info("server stopped.")
+
 	return err
 }
