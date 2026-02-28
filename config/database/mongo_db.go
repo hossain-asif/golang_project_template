@@ -21,7 +21,7 @@ func SetupMongoDB() (*MongoDB, error) {
 	defer cancel()
 
 	uri := env.GetString("MONGO_URI", "127.0.0.1")
-	dbName := env.GetString("MONGO_DB_NAME", "auth_dev")
+	dbName := env.GetString("MONGO_DB_NAME", "logdb")
 	collectionName := env.GetString("MONGO_COLLECTION_NAME", "logs")
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
