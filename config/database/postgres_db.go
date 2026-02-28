@@ -12,7 +12,7 @@ import (
 func SetupDB() (*gorm.DB, error) {
 
 	// Initialize the scoped logger once. Used "Scoped Logging" to reduce boilerplate.
-	log := logger.Log.Scope("config", "database", "postgres_database", "SetupDB")
+	log := logger.Log.Scope("config", "database", "postgres_database").WithField("method", "SetupDB")
 
 	host := env.GetString("DB_HOST", "127.0.0.1")
 	port := env.GetString("DB_PORT", "5432")
