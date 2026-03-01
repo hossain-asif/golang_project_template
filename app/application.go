@@ -2,10 +2,10 @@ package app
 
 import (
 	"context"
+	"go_project_structure/common_pkg/logger"
 	"go_project_structure/common_pkg/scheduler"
 	dbConfig "go_project_structure/config/database"
 	config "go_project_structure/config/env"
-	"go_project_structure/config/logger"
 	"go_project_structure/internal/router"
 	"os/signal"
 	"syscall"
@@ -15,6 +15,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 )
+
+// global decalaration
+var log = logger.Log.Scope("", "app", "application")
 
 // Config holds the configuration for the server.
 type Config struct {
@@ -42,7 +45,7 @@ func NewApplication(config Config) Application {
 
 func initModuleRegistry(ctx context.Context) (*chi.Mux, error) {
 
-	// setup mongodb 
+	// setup mongodb
 	hook, err := dbConfig.SetupMongoDB()
 	if err != nil {
 		return nil, err
@@ -53,13 +56,14 @@ func initModuleRegistry(ctx context.Context) (*chi.Mux, error) {
 	db, err := dbConfig.SetupDB()
 	if err != nil {
 
-		logger.Log.WithFields(map[string]interface{}{
-			// "layer":     "",
-			"module":    "app",
-			"component": "application",
-			"method":    "initModuleRegistry",
-			"error":     err,
-		}).Error("Error setting up database.")
+		// logger.Log.WithFields(map[string]interface{}{
+		// 	// "layer":     "",
+		// 	"module":    "app",
+		// 	"component": "application",
+		// 	"method":    "initModuleRegistry",
+		// 	"error":     err,
+		// }).Error("Error setting up database.")
+		log.Method("initModuleRegistry").WithError(err).Error("Error setting up database.")
 
 		return nil, err
 	}
@@ -102,44 +106,50 @@ func (app *Application) Run() error {
 	go func() {
 		<-ctx.Done()
 
-		logger.Log.WithFields(map[string]interface{}{
-			// "layer":     "",
-			"module":    "app",
-			"component": "application",
-			"method":    "Run",
-		}).Warn("shutting down server...")
+		// logger.Log.WithFields(map[string]interface{}{
+		// 	// "layer":     "",
+		// 	"module":    "app",
+		// 	"component": "application",
+		// 	"method":    "Run",
+		// }).Warn("shutting down server...")
+		log.Method("Run").Warn("shutting down server...")
 
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer shutdownCancel()
 		server.Shutdown(shutdownCtx)
 	}()
 
-	logger.Log.WithFields(map[string]interface{}{
-		// "layer":     "",
-		"module":    "app",
-		"component": "application",
-		"method":    "Run",
-		"port":      app.Config.Addr,
-	}).Info("server running on given port.")
+	// logger.Log.WithFields(map[string]interface{}{
+	// 	// "layer":     "",
+	// 	"module":    "app",
+	// 	"component": "application",
+	// 	"method":    "Run",
+	// 	"port":      app.Config.Addr,
+	// }).Info("server running on given port.")
+	log.Method("Run").Infof("server running on port: %s", app.Config.Addr)
 
 	if serverErr := server.ListenAndServe(); serverErr != http.ErrServerClosed {
-		logger.Log.WithFields(map[string]interface{}{
-			// "layer":     "",
-			"module":    "app",
-			"component": "application",
-			"method":    "Run",
-			"error":     serverErr,
-		}).Error("server initialization failed")
+		// logger.Log.WithFields(map[string]interface{}{
+		// 	// "layer":     "",
+		// 	"module":    "app",
+		// 	"component": "application",
+		// 	"method":    "Run",
+		// 	"error":     serverErr,
+		// }).Error("server initialization failed")
+
+		log.Method("Run").WithError(serverErr).Error("server initialization failed")
 
 		return serverErr
 	}
 
-	logger.Log.WithFields(map[string]interface{}{
-		// "layer":     "",
-		"module":    "app",
-		"component": "application",
-		"method":    "Run",
-	}).Info("server stopped.")
+	// logger.Log.WithFields(map[string]interface{}{
+	// 	// "layer":     "",
+	// 	"module":    "app",
+	// 	"component": "application",
+	// 	"method":    "Run",
+	// }).Info("server stopped.")
+
+	log.Method("Run").Info("server stopped.")
 
 	return err
 }

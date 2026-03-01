@@ -2,17 +2,20 @@ package database
 
 import (
 	"fmt"
+	"go_project_structure/common_pkg/logger"
 	env "go_project_structure/config/env"
-	"go_project_structure/config/logger"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func SetupDB() (*gorm.DB, error) {
+// global decalaration
 
-	// Initialize the scoped logger once. Used "Scoped Logging" to reduce boilerplate.
-	log := logger.Log.Scope("config", "database", "postgres_database").WithField("method", "SetupDB")
+// Initialize the scoped logger once. Used "Scoped Logging" to reduce boilerplate.
+// The "Define Once" Pattern (Package-Scoped)
+var log = logger.Log.Scope("config", "database", "postgres_database")
+
+func SetupDB() (*gorm.DB, error) {
 
 	host := env.GetString("DB_HOST", "127.0.0.1")
 	port := env.GetString("DB_PORT", "5432")
@@ -39,7 +42,7 @@ func SetupDB() (*gorm.DB, error) {
 		// 	"method":    "SetupDB",
 		// 	"error":     err,
 		// }).Error("Failed to connect to database")
-		log.WithError(err).Error("Failed to connect to database")
+		log.Method("SetupDB").WithError(err).Error("Failed to connect to database")
 
 		return nil, err
 	}
@@ -53,7 +56,7 @@ func SetupDB() (*gorm.DB, error) {
 		// 	"method":    "SetupDB",
 		// 	"error":     err,
 		// }).Error("Failed to get database connection")
-		log.WithError(err).Error("Failed to get database connection")
+		log.Method("SetupDB").WithError(err).Error("Failed to get database connection")
 		return nil, err
 	}
 	err = pgsqlDB.Ping()
@@ -65,7 +68,7 @@ func SetupDB() (*gorm.DB, error) {
 		// 	"method":    "SetupDB",
 		// 	"error":     err,
 		// }).Error("Failed to ping database")
-		log.WithError(err).Error("Failed to ping database")
+		log.Method("SetupDB").WithError(err).Error("Failed to ping database")
 		return nil, err
 	}
 
@@ -75,7 +78,7 @@ func SetupDB() (*gorm.DB, error) {
 	// 	"component": "postgres_database",
 	// 	"method":    "SetupDB",
 	// }).Info("Successfully connected to database")
-	log.Info("Successfully connected to database")
+	log.Method("SetupDB").Info("Successfully connected to database")
 
 	var dbName string
 	db.Raw("SELECT current_database()").Scan(&dbName)
@@ -87,7 +90,11 @@ func SetupDB() (*gorm.DB, error) {
 	// 	"method":    "SetupDB",
 	// 	"database":  dbName,
 	// }).Info("Connected to database")
-	log.WithField("database", dbName).Info("Connected to database")
+
+	// log.Method("SetupDB").WithField("database", dbName).Info("Connected to database")
+
+	log.Method("SetupDB").Infof("Connected to database: %s", dbName)
+
 
 	return db, nil
 
