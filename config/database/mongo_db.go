@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"go_project_structure/common_pkg/logger"
 	env "go_project_structure/config/env"
 	"time"
 
@@ -9,6 +10,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+// global decalaration
+var mongoLog = logger.Log.Scope("config", "database", "mongo_database")
 
 type MongoDB struct {
 	Collection *mongo.Collection
@@ -26,6 +30,7 @@ func SetupMongoDB() (*MongoDB, error) {
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
+		mongoLog.Method("SetupMongoDB").Errorf("MongoDB connection failed. Error: %s", err)
 		return nil, err
 	}
 
@@ -46,6 +51,10 @@ func (m *MongoDB) Fire(entry *logrus.Entry) error {
 	}
 
 	_, err := m.Collection.InsertOne(ctx, doc)
+	if err != nil {
+		mongoLog.Method("Fire").Errorf("Failed to insert log into MongoDB. Error: %s", err)
+	}
+
 	return err
 }
 

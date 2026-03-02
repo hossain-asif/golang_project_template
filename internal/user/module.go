@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 	"go_project_structure/common_pkg/scheduler"
-	"go_project_structure/internal/db/repositories"
+	"go_project_structure/internal/infrastructure/repositories"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -31,7 +31,7 @@ func (m *UserModule) RegisterTasks(db *gorm.DB) []scheduler.Task {
 			Name: "get-all-users", 
 			Interval: 24 * time.Hour, 
 			Fn: func(ctx context.Context) error {
-				_, err := m.repo.GetAll()
+				_, err := m.repo.GetAll(ctx)
 				return err
 			},
 		},
@@ -39,7 +39,7 @@ func (m *UserModule) RegisterTasks(db *gorm.DB) []scheduler.Task {
 			Name: "auto-export-csv",
 			Interval: 50 * time.Minute,
 			Fn: func(ctx context.Context) error {
-				_, err := m.svc.ExportUsersAsCSV()
+				_, err := m.svc.ExportUsersAsCSV(ctx)
 				return err
 			},	
 		},

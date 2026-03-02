@@ -41,7 +41,6 @@ func (l *LoggerWrapper) WithFields(fields logrus.Fields) *logrus.Entry {
 
 // func (l *LoggerWrapper) Scope(layer, module, component string) *logrus.Entry {
 // 	return l.Logger.WithFields(logrus.Fields{
-// 		"layer":     layer,
 // 		"module":    module,
 // 		"component": component,
 // 	})

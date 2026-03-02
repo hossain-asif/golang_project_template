@@ -1,6 +1,7 @@
 package csv
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	workerpool "go_project_structure/common_pkg/worker_pool"
@@ -81,7 +82,6 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 		return "", writeHeaderErr
 	}
 
-
 	// Loop over each element (each struct instance) in the slice
 	for i := 0; i < val.Len(); i++ {
 
@@ -124,7 +124,7 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 	return fileName, nil
 }
 
-func UploadAndStreamCSV(r *http.Request, batchSize int, workerCount int, process func([][]string) error) error {
+func UploadAndStreamCSV(r *http.Request, batchSize int, workerCount int, process func(ctx context.Context, records [][]string) error) error {
 	err := r.ParseMultipartForm(10 << 20) // file size 10MB
 	if err != nil {
 		return fmt.Errorf("File too large: %v", err)
@@ -139,7 +139,7 @@ func UploadAndStreamCSV(r *http.Request, batchSize int, workerCount int, process
 	reader := csv.NewReader(uploadedFile)
 
 	// Create worker pool for csv parellel processing
-	pool := workerpool.NewPool(workerCount, process)
+	pool := workerpool.NewPool(r.Context(), workerCount, process)
 
 	records := make([][]string, 0, batchSize)
 

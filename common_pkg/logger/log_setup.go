@@ -21,8 +21,8 @@ func InitLogger() {
 	Log = &LoggerWrapper{Logger: log}
 
 	log.WithFields(map[string]interface{}{
-		"module": "logger",
-		"step":   "log_setup",
+		"module":    "logger",
+		"component": "log_setup",
 	}).Info("Logger initialized")
 
 }

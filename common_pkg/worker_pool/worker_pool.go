@@ -1,6 +1,9 @@
 package workerpool
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 /*
  This is thread pool pattern with fixed number of workers. For go-lang it is called Worker Pool or Goroutine Pool.
@@ -70,12 +73,12 @@ func (wp *WorkerPool[I, O]) Results() <-chan Result[O] {
 	return wp.ResultChan
 }
 
-func NewPool[I any](workerCount int, process func(I) error) *WorkerPool[I, struct{}] {
+func NewPool[I any](ctx context.Context, workerCount int, process func(ctx context.Context, data I) error) *WorkerPool[I, struct{}] {
 	pool := NewWorkerPool[I, struct{}](
 		workerCount,
 		workerCount,
 		func(data I) (struct{}, error) {
-			return struct{}{}, process(data)
+			return struct{}{}, process(ctx, data)
 		},
 	)
 	pool.Start()

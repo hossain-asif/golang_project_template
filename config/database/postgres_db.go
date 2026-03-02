@@ -13,7 +13,7 @@ import (
 
 // Initialize the scoped logger once. Used "Scoped Logging" to reduce boilerplate.
 // The "Define Once" Pattern (Package-Scoped)
-var log = logger.Log.Scope("config", "database", "postgres_database")
+var pglog = logger.Log.Scope("config", "database", "postgres_database")
 
 func SetupDB() (*gorm.DB, error) {
 
@@ -42,7 +42,7 @@ func SetupDB() (*gorm.DB, error) {
 		// 	"method":    "SetupDB",
 		// 	"error":     err,
 		// }).Error("Failed to connect to database")
-		log.Method("SetupDB").WithError(err).Error("Failed to connect to database")
+		pglog.Method("SetupDB").WithError(err).Error("Failed to connect to database")
 
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func SetupDB() (*gorm.DB, error) {
 		// 	"method":    "SetupDB",
 		// 	"error":     err,
 		// }).Error("Failed to get database connection")
-		log.Method("SetupDB").WithError(err).Error("Failed to get database connection")
+		pglog.Method("SetupDB").WithError(err).Error("Failed to get database connection")
 		return nil, err
 	}
 	err = pgsqlDB.Ping()
@@ -68,7 +68,7 @@ func SetupDB() (*gorm.DB, error) {
 		// 	"method":    "SetupDB",
 		// 	"error":     err,
 		// }).Error("Failed to ping database")
-		log.Method("SetupDB").WithError(err).Error("Failed to ping database")
+		pglog.Method("SetupDB").WithError(err).Error("Failed to ping database")
 		return nil, err
 	}
 
@@ -78,7 +78,7 @@ func SetupDB() (*gorm.DB, error) {
 	// 	"component": "postgres_database",
 	// 	"method":    "SetupDB",
 	// }).Info("Successfully connected to database")
-	log.Method("SetupDB").Info("Successfully connected to database")
+	pglog.Method("SetupDB").Info("Successfully connected to database")
 
 	var dbName string
 	db.Raw("SELECT current_database()").Scan(&dbName)
@@ -93,7 +93,7 @@ func SetupDB() (*gorm.DB, error) {
 
 	// log.Method("SetupDB").WithField("database", dbName).Info("Connected to database")
 
-	log.Method("SetupDB").Infof("Connected to database: %s", dbName)
+	pglog.Method("SetupDB").Infof("Connected to database: %s", dbName)
 
 
 	return db, nil

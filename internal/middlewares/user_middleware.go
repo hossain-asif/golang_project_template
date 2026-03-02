@@ -2,45 +2,53 @@ package middlewares
 
 import (
 	"context"
-	"fmt"
 	"go_project_structure/common_pkg/json"
+	"go_project_structure/common_pkg/logger"
 	"go_project_structure/internal/dto"
 	enums "go_project_structure/utils/enums"
 	"net/http"
 )
 
+var userMiddlewareLogger = logger.Log.Scope("", "middleware", "user_middleware")
+
 func UserRegisterRequestValidator(next http.Handler) http.Handler {
+	log := userMiddlewareLogger.Method("UserRegisterRequestValidator")
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var RequestPayload = dto.RegisterUserRequest{}
 		if payloadErr := json.ReadJsonBody(r, &RequestPayload); payloadErr != nil {
+			log.Errorf("Json encoding error. %v", payloadErr)
 			json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json encoding error.", payloadErr)
 			return
 		}
-		fmt.Println("register payload received.")
+		log.Infof("user signup payload received.")
 
 		// validation logic for the user registration payload
 
 		// context can be used to pass the validated payload to the handler for further processing
-		req_context := r.Context()                                                    // parent context -> get the context from the request
+		req_context := r.Context()                                                          // parent context -> get the context from the request
 		ctx := context.WithValue(req_context, enums.CtxRegistrationPayload, RequestPayload) // create a new context with the validated payload
-		r = r.WithContext(ctx)                                                        // create a new request with the new context
+		r = r.WithContext(ctx)                                                              // create a new request with the new context
 
 		next.ServeHTTP(w, r)
 	})
 }
 
 func UserUpdateRequestValidator(next http.Handler) http.Handler {
+	log := userMiddlewareLogger.Method("UserUpdateRequestValidator")
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var RequestPayload = dto.UpdateUserRequest{}
 		if payloadErr := json.ReadJsonBody(r, &RequestPayload); payloadErr != nil {
+			log.Errorf("Json encoding error. %v", payloadErr)
 			json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json encoding error.", payloadErr)
 			return
 		}
-		fmt.Println("update payload received.")
+		log.Infof("user update payload received.")
 
 		// validation logic for the user registration payload
 
-		req_context := r.Context()                                              // parent context -> get the context from the request
+		req_context := r.Context()                                                    // parent context -> get the context from the request
 		ctx := context.WithValue(req_context, enums.CtxUpdatePayload, RequestPayload) // create a new context with the validated payload
 		r = r.WithContext(ctx)
 

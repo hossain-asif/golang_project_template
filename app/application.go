@@ -17,7 +17,8 @@ import (
 )
 
 // global decalaration
-var log = logger.Log.Scope("", "app", "application")
+// better to keep the log name as similar to file name
+var appLog = logger.Log.Scope("", "app", "application")
 
 // Config holds the configuration for the server.
 type Config struct {
@@ -46,11 +47,11 @@ func NewApplication(config Config) Application {
 func initModuleRegistry(ctx context.Context) (*chi.Mux, error) {
 
 	// setup mongodb
-	hook, err := dbConfig.SetupMongoDB()
-	if err != nil {
-		return nil, err
-	}
-	logger.AddHook(hook)
+	// hook, err := dbConfig.SetupMongoDB()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// logger.AddHook(hook)
 
 	// set up postgres db
 	db, err := dbConfig.SetupDB()
@@ -63,7 +64,7 @@ func initModuleRegistry(ctx context.Context) (*chi.Mux, error) {
 		// 	"method":    "initModuleRegistry",
 		// 	"error":     err,
 		// }).Error("Error setting up database.")
-		log.Method("initModuleRegistry").WithError(err).Error("Error setting up database.")
+		appLog.Method("initModuleRegistry").WithError(err).Error("Error setting up database.")
 
 		return nil, err
 	}
@@ -112,7 +113,7 @@ func (app *Application) Run() error {
 		// 	"component": "application",
 		// 	"method":    "Run",
 		// }).Warn("shutting down server...")
-		log.Method("Run").Warn("shutting down server...")
+		appLog.Method("Run").Warn("shutting down server...")
 
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer shutdownCancel()
@@ -126,7 +127,7 @@ func (app *Application) Run() error {
 	// 	"method":    "Run",
 	// 	"port":      app.Config.Addr,
 	// }).Info("server running on given port.")
-	log.Method("Run").Infof("server running on port: %s", app.Config.Addr)
+	appLog.Method("Run").Infof("server running on port: %s", app.Config.Addr)
 
 	if serverErr := server.ListenAndServe(); serverErr != http.ErrServerClosed {
 		// logger.Log.WithFields(map[string]interface{}{
@@ -137,7 +138,7 @@ func (app *Application) Run() error {
 		// 	"error":     serverErr,
 		// }).Error("server initialization failed")
 
-		log.Method("Run").WithError(serverErr).Error("server initialization failed")
+		appLog.Method("Run").WithError(serverErr).Error("server initialization failed")
 
 		return serverErr
 	}
@@ -149,7 +150,7 @@ func (app *Application) Run() error {
 	// 	"method":    "Run",
 	// }).Info("server stopped.")
 
-	log.Method("Run").Info("server stopped.")
+	appLog.Method("Run").Info("server stopped.")
 
 	return err
 }

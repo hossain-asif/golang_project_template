@@ -1,16 +1,20 @@
 package user
 
 import (
-	"fmt"
+	"context"
 	common_csv "go_project_structure/common_pkg/csv"
-	"go_project_structure/internal/db/models"
 	"go_project_structure/internal/dto"
+	"go_project_structure/internal/infrastructure/models"
 	"go_project_structure/utils/authentication"
 )
 
-func (us *UserServiceImpl) ExportUsersAsCSV() (string, error) {
-	users, err := us.userRepository.GetAll()
+func (us *UserServiceImpl) ExportUsersAsCSV(ctx context.Context) (string, error) {
+	log := us.userServiceLog.Method("ExportUsersAsCSV").WithContext(ctx)
+	log.Infof("Exporting users as CSV in user service.")
+
+	users, err := us.userRepository.GetAll(ctx)
 	if err != nil {
+		log.Errorf("Error fetching all users: %v\n", err)
 		return "", err
 	}
 
@@ -27,15 +31,18 @@ func (us *UserServiceImpl) ExportUsersAsCSV() (string, error) {
 
 	fileName, err := common_csv.ExportToCSV("users", userCSV)
 	if err != nil {
+		log.Errorf("Error exporting users as CSV: %v\n", err)
 		return "", err
 	}
 
+	log.Infof("Users exported as CSV successfully from service. filename: %v", fileName)
 	return fileName, nil
 
 }
 
-func (us *UserServiceImpl) CreateUserViaTnxUsingBatchProcessing(batch [][]string) error {
-	fmt.Println("Creating user in user service using batch processing.")
+func (us *UserServiceImpl) CreateUserViaTnxUsingBatchProcessing(ctx context.Context, batch [][]string) error {
+	log := us.userServiceLog.Method("CreateUserViaTnxUsingBatchProcessing").WithContext(ctx)
+	log.Infof("Creating user in user service using batch processing.")
 
 	var users []*models.User
 
@@ -43,6 +50,7 @@ func (us *UserServiceImpl) CreateUserViaTnxUsingBatchProcessing(batch [][]string
 
 		password, passwordErr := authentication.HashPassword(user[2])
 		if passwordErr != nil {
+			log.Errorf("Error hashing password: %v\n", passwordErr)
 			return passwordErr
 		}
 
@@ -53,13 +61,15 @@ func (us *UserServiceImpl) CreateUserViaTnxUsingBatchProcessing(batch [][]string
 		})
 	}
 
-	message, err := us.userRepository.InsertViaTnxUsingBatchProcessing(users)
+	message, err := us.userRepository.InsertViaTnxUsingBatchProcessing(ctx, users)
 	if err != nil {
-		fmt.Printf("Error creating user: %v\n", err)
+		log.Errorf("Error creating user: %v\n", err)
 		return err
 	}
 
-	fmt.Println(message)
+	log.WithFields(map[string]interface{}{
+		"message": message,
+	}).Infof("User created via tnx successfully from service using batch processing.")
 
 	return nil
 }
