@@ -15,9 +15,8 @@ var limiter = rate.NewLimiter(rate.Every(1*time.Second), 5) // 5 request per sec
 var rateLimitMiddlewareLogger = logger.Log.Scope("", "middleware", "rate_limit_middleware")
 
 func RateLimitMiddleware(next http.Handler) http.Handler {
-	log := rateLimitMiddlewareLogger.Method("RateLimitMiddleware")
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := rateLimitMiddlewareLogger.Method("RateLimitMiddleware").WithContext(r.Context())
 
 		if !limiter.Allow() {
 			log.Errorf("Too many requests")

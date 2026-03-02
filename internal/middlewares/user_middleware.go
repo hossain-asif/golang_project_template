@@ -12,9 +12,9 @@ import (
 var userMiddlewareLogger = logger.Log.Scope("", "middleware", "user_middleware")
 
 func UserRegisterRequestValidator(next http.Handler) http.Handler {
-	log := userMiddlewareLogger.Method("UserRegisterRequestValidator")
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := userMiddlewareLogger.Method("UserRegisterRequestValidator").WithContext(r.Context())
+
 		var RequestPayload = dto.RegisterUserRequest{}
 		if payloadErr := json.ReadJsonBody(r, &RequestPayload); payloadErr != nil {
 			log.Errorf("Json encoding error. %v", payloadErr)
@@ -35,9 +35,9 @@ func UserRegisterRequestValidator(next http.Handler) http.Handler {
 }
 
 func UserUpdateRequestValidator(next http.Handler) http.Handler {
-	log := userMiddlewareLogger.Method("UserUpdateRequestValidator")
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := userMiddlewareLogger.Method("UserUpdateRequestValidator").WithContext(r.Context())
+
 		var RequestPayload = dto.UpdateUserRequest{}
 		if payloadErr := json.ReadJsonBody(r, &RequestPayload); payloadErr != nil {
 			log.Errorf("Json encoding error. %v", payloadErr)

@@ -16,9 +16,9 @@ import (
 var jwtAuthMiddlewareLogger = logger.Log.Scope("", "middleware", "jwt_auth_middleware")
 
 func JwtAuthMiddleware(next http.Handler) http.Handler {
-	log := jwtAuthMiddlewareLogger.Method("JwtAuthMiddleware")
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := jwtAuthMiddlewareLogger.Method("JwtAuthMiddleware").WithContext(r.Context())
+		
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			log.Errorf("Authorization header missing")
