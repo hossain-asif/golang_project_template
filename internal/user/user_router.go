@@ -31,7 +31,8 @@ func (ur *UserRouter) v1() http.Handler {
 	// Public
 	r.With(middlewares.UserRegisterRequestValidator).
 		Post("/signup", ur.userController.RegisterUser)
-	r.Post("/login", ur.userController.LoginUser)
+	r.With(middlewares.UserLoginRequestValidator).
+		Post("/login", ur.userController.LoginUser)
 
 	// Protected (JWT required)
 	r.Group(func(r chi.Router) {
@@ -39,7 +40,9 @@ func (ur *UserRouter) v1() http.Handler {
 		r.Get("/profile", ur.userController.GetAllUsers)
 		r.Get("/profile/export", ur.userController.ExportUsersCSV)
 		r.Get("/profile/download", ur.userController.DownloadFileHandler)
-		r.Post("/profile/upload", ur.userController.UploadUserCSV)
+		
+		r.With(middlewares.UserUploadCSVRequestValidator).
+			Post("/profile/upload", ur.userController.UploadUserCSV)
 
 		r.Route("/profile/{id}", func(r chi.Router) {
 			r.Get("/", ur.userController.GetUserById)
@@ -63,7 +66,8 @@ func (ur *UserRouter) v2() http.Handler {
 	// Public
 	r.With(middlewares.UserRegisterRequestValidator).
 		Post("/signup", ur.userController.RegisterUser)
-	r.Post("/login", ur.userController.LoginUser)
+	r.With(middlewares.UserLoginRequestValidator).
+		Post("/login", ur.userController.LoginUser)
 
 	// Protected (JWT required)
 	r.Group(func(r chi.Router) {

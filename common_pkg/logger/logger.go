@@ -2,6 +2,7 @@ package logger
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -9,9 +10,10 @@ import (
 )
 
 type LogConfig struct {
-	Environment string
-	Level       string
-	LogFile     string
+	Environment  string
+	Level        string
+	LogDirectory string
+	LogFile      string
 }
 
 type OrderedFormatter struct {
@@ -62,9 +64,15 @@ func NewLogConfig(cfg LogConfig) *logrus.Logger {
 		})
 	}
 
+	logPath := filepath.Join(cfg.LogDirectory, cfg.LogFile)
+	if err := os.MkdirAll(cfg.LogDirectory, 0755); err != nil {
+		log.Warnf("Failed to create log directory %s: %v — falling back to stdout", cfg.LogDirectory, err)
+	}
+
 	if cfg.LogFile != "" {
+		log.SetOutput(os.Stdout)
 		log.SetOutput(&lumberjack.Logger{
-			Filename:   cfg.LogFile,
+			Filename:   logPath,
 			MaxSize:    20, // MB
 			MaxBackups: 5,
 			MaxAge:     30, // days

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"go_project_structure/common_pkg/logger"
 	workerpool "go_project_structure/common_pkg/worker_pool"
 	"io"
 	"net/http"
@@ -12,10 +13,13 @@ import (
 	"time"
 )
 
+var csvLog = logger.Log.Scope("common_pkg", "csv", "csv")
+
 // ExportToCSV is a generic function that exports ANY slice of structs into a CSV file.
 // filePrefix determines the filename prefix (e.g., users, roles, permissions)
 // data must be a slice of structs
 func ExportToCSV(filePrefix string, data interface{}) (string, error) {
+	log := csvLog.Method("ExportToCSV")
 
 	// Convert the input data into a reflection value
 	// This allows us to inspect it at runtime
@@ -24,12 +28,14 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 	// Ensure that the provided data is actually a slice
 	// Because CSV export expects multiple records
 	if val.Kind() != reflect.Slice {
+		log.Errorf("data must be a slice")
 		return "", fmt.Errorf("data must be a slice")
 	}
 
 	// Prevent creating a CSV file if the slice is empty
 	// Because we cannot infer struct fields without at least one element
 	if val.Len() == 0 {
+		log.Errorf("empty slice")
 		return "", fmt.Errorf("empty slice")
 	}
 
@@ -41,6 +47,7 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 	// Create a new file in the filesystem. If file already exists, it will be overwritten.
 	file, err := os.Create(fileName)
 	if err != nil {
+		log.Errorf("failed to create file: %v", err)
 		return "", err
 	}
 	// Ensure file is properly closed after function execution
@@ -79,6 +86,7 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 	// Write the header row into the CSV file
 	writeHeaderErr := writer.Write(headers)
 	if writeHeaderErr != nil {
+		log.Errorf("failed to write header: %v", writeHeaderErr)
 		return "", writeHeaderErr
 	}
 
@@ -116,23 +124,23 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 		// Write the row into CSV file
 		writeRowErr := writer.Write(row)
 		if writeRowErr != nil {
+			log.Errorf("failed to write row: %v", writeRowErr)
 			return "", writeRowErr
 		}
 	}
 
 	// Return the generated filename if everything succeeded
+	log.Infof("exported to %s", fileName)
 	return fileName, nil
 }
 
 func UploadAndStreamCSV(r *http.Request, batchSize int, workerCount int, process func(ctx context.Context, records [][]string) error) error {
-	err := r.ParseMultipartForm(10 << 20) // file size 10MB
-	if err != nil {
-		return fmt.Errorf("File too large: %v", err)
-	}
+	log := csvLog.Method("UploadAndStreamCSV").WithContext(r.Context())
 
 	uploadedFile, _, fileErr := r.FormFile("file")
 	if fileErr != nil {
-		return fmt.Errorf("File too large: %v", fileErr)
+		log.Errorf("File is required: %v", fileErr)
+		return fmt.Errorf("File is required: %v", fileErr)
 	}
 	defer uploadedFile.Close()
 
@@ -146,10 +154,11 @@ func UploadAndStreamCSV(r *http.Request, batchSize int, workerCount int, process
 	// remove header : first row that contains column names
 	csvHeader, csvHeaderErr := reader.Read()
 	if csvHeaderErr != nil {
+		log.Errorf("invalid CSV header: %v", csvHeaderErr)
 		return fmt.Errorf("invalid CSV header: %v", csvHeaderErr)
 	}
 
-	fmt.Println("csv header: ", csvHeader)
+	log.Infof("csv header: %v", csvHeader)
 
 	for {
 		record, err := reader.Read()
@@ -158,6 +167,7 @@ func UploadAndStreamCSV(r *http.Request, batchSize int, workerCount int, process
 		}
 		if err != nil {
 			pool.Done()
+			log.Errorf("error reading CSV: %v", err)
 			return fmt.Errorf("error reading CSV: %v", err)
 		}
 		records = append(records, record)
@@ -180,6 +190,7 @@ func UploadAndStreamCSV(r *http.Request, batchSize int, workerCount int, process
 	var firstErr error
 	for result := range pool.Results() {
 		if result.Err != nil && firstErr == nil {
+			log.Errorf("error processing CSV: %v", result.Err)
 			firstErr = result.Err
 		}
 	}
