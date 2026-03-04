@@ -37,7 +37,8 @@ func (ur *UserRouter) v1() http.Handler {
 	// Protected (JWT required)
 	r.Group(func(r chi.Router) {
 		r.Use(middlewares.JwtAuthMiddleware)
-		r.Get("/profile", ur.userController.GetAllUsers)
+		r.Get("/profile/all", ur.userController.GetAllUsers)
+		r.Get("/profile", ur.userController.GetUsersByPagination)
 		r.Get("/profile/export", ur.userController.ExportUsersCSV)
 		r.Get("/profile/download", ur.userController.DownloadFileHandler)
 		

@@ -5,6 +5,7 @@ import (
 	common_csv "go_project_structure/common_pkg/csv"
 	"go_project_structure/common_pkg/json"
 	"go_project_structure/common_pkg/logger"
+	offsetpagination "go_project_structure/common_pkg/pagination/offset_pagination"
 	"go_project_structure/internal/dto"
 	"go_project_structure/internal/infrastructure/models"
 	enums "go_project_structure/utils/enums"
@@ -140,6 +141,29 @@ func (uc *UserController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	log.Infof("All users fetched successfully.")
 	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get all users end point", users)
+}
+
+func (uc *UserController) GetUsersByPagination(w http.ResponseWriter, r *http.Request) {
+	log := uc.userHandlerLog.WithContext(r.Context()).Method("GetUsersByPagination")
+
+	// Parse & validate pagination params
+	paginationParams := offsetpagination.Parse(r)
+
+	// Extract any additional filters
+	// _ := r.URL.Query().Get("name")
+
+	// call service layer
+	users, totalUsers, err := uc.UserService.GetUsersByOffsetPagination(r.Context(), paginationParams)
+	if err != nil {
+		log.Errorf("User fetch failed. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "Users fetch failed.", err)
+		return
+	}
+
+	// Build paginated response
+	resp := offsetpagination.NewResponse(users, paginationParams, totalUsers)
+
+	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get users by pagination end point", resp)
 }
 
 func (uc *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
