@@ -1,13 +1,7 @@
-package offsetpagination
+package offset_pagination
 
 import (
 	"math"
-)
-
-const (
-	DefaultPage  = 1
-	DefaultLimit = 10
-	MaxLimit     = 50
 )
 
 // Meta holds pagination metadata for API responses

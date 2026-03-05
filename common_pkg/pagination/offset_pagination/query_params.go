@@ -1,7 +1,7 @@
-package offsetpagination
+package offset_pagination
 
 import (
-	"go_project_structure/common_pkg/pagination"
+	"go_project_structure/common_pkg/pagination/helper"
 	"net/http"
 )
 

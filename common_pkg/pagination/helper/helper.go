@@ -12,3 +12,10 @@ func ParseInt(s string, fallback int) int {
 	}
 	return v
 }
+
+func ParseString(s string, fallback string) string {
+	if s == "" {
+		return fallback
+	}
+	return s
+}

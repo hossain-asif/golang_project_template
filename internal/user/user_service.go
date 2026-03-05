@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"go_project_structure/common_pkg/logger"
-	offsetpagination "go_project_structure/common_pkg/pagination/offset_pagination"
+	"go_project_structure/common_pkg/pagination/cursor_pagination"
+	"go_project_structure/common_pkg/pagination/offset_pagination"
 	env "go_project_structure/config/env"
 	"go_project_structure/internal/dto"
 	"go_project_structure/internal/infrastructure/models"
@@ -23,7 +24,8 @@ type UserService interface {
 	DeleteUser(ctx context.Context, id string) (string, error)
 	PermanentlyDeleteUser(ctx context.Context, id string) (string, error)
 
-	GetUsersByOffsetPagination(ctx context.Context, p offsetpagination.Params) ([]*models.User, int64, error)
+	GetUsersByOffsetPagination(ctx context.Context, p offset_pagination.Params) ([]*models.User, int64, error)
+	GetUsersByCursorPagination(ctx context.Context, p cursor_pagination.Params) ([]*models.User, error)
 
 	ExportUsersAsCSV(ctx context.Context) (string, error)
 	CreateUserViaTnx(ctx context.Context, users [][]string) (string, error)
@@ -120,18 +122,27 @@ func (us *UserServiceImpl) GetAllUsers(ctx context.Context) ([]*models.User, err
 	return users, nil
 }
 
-func (us *UserServiceImpl) GetUsersByOffsetPagination(ctx context.Context, p offsetpagination.Params) ([]*models.User, int64, error) {
+func (us *UserServiceImpl) GetUsersByOffsetPagination(ctx context.Context, p offset_pagination.Params) ([]*models.User, int64, error) {
 	log := us.userServiceLog.Method("GetUsersByOffsetPagination").WithContext(ctx)
-	log.Infof("Get all users start.")
 
-	users, totalUsers, err := us.userRepository.GetAllByOffsetPagination(ctx, p)
+	users, totalUsers, err := us.userRepository.ListUsersOffsetPagination(ctx, p)
 	if err != nil {
 		log.Errorf("Error fetching all users: %v\n", err)
 		return nil, 0, err
 	}
 
-	log.Infof("Get all users from service.")
 	return users, totalUsers, nil
+}
+
+func (us *UserServiceImpl) GetUsersByCursorPagination(ctx context.Context, p cursor_pagination.Params) ([]*models.User, error) {
+	log := us.userServiceLog.Method("GetUsersByCursorPagination").WithContext(ctx)
+
+	users, err := us.userRepository.ListUsersCursorPagination(ctx, p)
+	if err != nil {
+		log.Errorf("Error fetching all users: %v\n", err)
+		return nil, err
+	}
+	return users, nil
 }
 
 func (us *UserServiceImpl) UpdateUser(ctx context.Context, id string, updatePayload *dto.UpdateUserRequest) (string, error) {

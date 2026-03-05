@@ -38,12 +38,14 @@ func (ur *UserRouter) v1() http.Handler {
 	r.Group(func(r chi.Router) {
 		r.Use(middlewares.JwtAuthMiddleware)
 		r.Get("/profile/all", ur.userController.GetAllUsers)
-		r.Get("/profile", ur.userController.GetUsersByPagination)
 		r.Get("/profile/export", ur.userController.ExportUsersCSV)
 		r.Get("/profile/download", ur.userController.DownloadFileHandler)
-		
 		r.With(middlewares.UserUploadCSVRequestValidator).
 			Post("/profile/upload", ur.userController.UploadUserCSV)
+
+		// pagination
+		r.Get("/profile/offset", ur.userController.GetUsersByOffsetPagination)
+		r.Get("/profile/cursor", ur.userController.GetUsersByCursorPagination)
 
 		r.Route("/profile/{id}", func(r chi.Router) {
 			r.Get("/", ur.userController.GetUserById)

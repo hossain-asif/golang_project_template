@@ -1,4 +1,4 @@
-package offsetpagination
+package offset_pagination
 
 // Response is a generic paginated API response wrapper
 type Response[T any] struct {
