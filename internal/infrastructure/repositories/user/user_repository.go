@@ -6,10 +6,12 @@ import (
 	"go_project_structure/common_pkg/logger"
 	"go_project_structure/common_pkg/pagination/cursor_pagination"
 	"go_project_structure/common_pkg/pagination/offset_pagination"
+	"go_project_structure/common_pkg/pagination/seek_pagination"
 	"go_project_structure/internal/dto"
 	"go_project_structure/internal/infrastructure/models"
 	"go_project_structure/utils/pg"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -22,8 +24,11 @@ type UserRepository interface {
 	SoftDelete(ctx context.Context, id string) (string, error)
 	HardDelete(ctx context.Context, id string) (string, error)
 
+	// pagination
 	ListUsersOffsetPagination(ctx context.Context, p offset_pagination.Params) ([]*models.User, int64, error)
 	ListUsersCursorPagination(ctx context.Context, p cursor_pagination.Params) ([]*models.User, error)
+	ListUsersSeekPagination(ctx context.Context, params seek_pagination.Params) (seek_pagination.RailResult[models.User], error)
+	CountUsersNewSince(ctx context.Context, since time.Time, sinceID uint) (int64, error)
 
 	InsertViaTnx(ctx context.Context, user *models.User) (string, error)
 	InsertViaTnxUsingBatchProcessing(ctx context.Context, users []*models.User) (string, error)
@@ -270,93 +275,6 @@ func (u *UserRepositoryImpl) GetByEmail(ctx context.Context, email string) (*mod
 	// step 4: return the result
 	log.Infof("Fetched user: %+v\n", user)
 	return user, nil
-}
-
-// offset based pagination
-func (u *UserRepositoryImpl) ListUsersOffsetPagination(ctx context.Context, p offset_pagination.Params) ([]*models.User, int64, error) {
-	log := u.userRepositoryLog.WithContext(ctx).Method("GetAllByOffsetPagination")
-
-	// step 1: prepare the query
-	query := "SELECT id, name, email, created_at, updated_at FROM users"
-	countQuery := "SELECT COUNT(*) FROM users WHERE deleted_at IS NULL"
-	args := []interface{}{}
-
-	query += " WHERE deleted_at IS NULL"
-	query += " ORDER BY created_at DESC"
-
-	if p.Limit > 0 {
-		query += " LIMIT ?"
-		args = append(args, p.Limit)
-	}
-
-	if p.Offset > 0 {
-		query += " OFFSET ?"
-		args = append(args, p.Offset)
-	}
-
-	// step 2: execute the query
-
-	// fetching users
-	var users []*models.User
-	usersErr := u.db.WithContext(ctx).Raw(query, args...).Scan(&users).Error
-	if usersErr != nil {
-		log.Errorf("Error fetching all users: %v\n", usersErr)
-		return nil, 0, usersErr
-	}
-
-	// count users
-	var totalUsers int64
-	cntErr := u.db.WithContext(ctx).Raw(countQuery).Scan(&totalUsers).Error
-	if cntErr != nil {
-		log.Errorf("Error counting all users: %v\n", cntErr)
-		return nil, 0, cntErr
-	}
-
-	// step 3: return the result
-	log.Infof("Fetched users successfully from repository.")
-	return users, totalUsers, nil
-}
-
-// cursor based pagination
-func (u *UserRepositoryImpl) ListUsersCursorPagination(ctx context.Context, p cursor_pagination.Params) ([]*models.User, error) {
-	log := u.userRepositoryLog.WithContext(ctx).Method("ListUsersCursorPagination")
-
-	// step 1: prepare the query
-	query := "SELECT id, name, email, created_at, updated_at FROM users"
-	// countQuery := "SELECT COUNT(*) FROM users WHERE deleted_at IS NULL"
-	args := []interface{}{}
-
-	query += " WHERE deleted_at IS NULL"
-	// query += " ORDER BY created_at DESC"
-
-	if p.Cursor != nil {
-		switch p.Direction {
-		case cursor_pagination.DirectionNext:
-			query += " AND ((created_at < ?) OR (created_at = ? AND id < ?))"
-			args = append(args, p.Cursor.CreatedAt, p.Cursor.CreatedAt, p.Cursor.ID)
-		case cursor_pagination.DirectionPrev:
-			query += " AND ((created_at > ?) OR (created_at = ? AND id > ?))"
-			args = append(args, p.Cursor.CreatedAt, p.Cursor.CreatedAt, p.Cursor.ID)
-		}
-	}
-
-	if p.Direction == cursor_pagination.DirectionNext {
-		query += " ORDER BY created_at DESC, id DESC"
-	} else {
-		query += " ORDER BY created_at ASC, id ASC"
-	}
-	
-
-	// step 2: execute the query
-	var users []*models.User
-	usersErr := u.db.WithContext(ctx).Raw(query, args...).Scan(&users).Error
-	if usersErr != nil {
-		log.Errorf("Error fetching all users: %v\n", usersErr)
-		return nil, usersErr
-	}
-	// step 3: return the result
-	log.Infof("Fetched users successfully from repository.")
-	return users, nil
 }
 
 func (u *UserRepositoryImpl) InsertViaTnx(ctx context.Context, user *models.User) (string, error) {

@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 	"go_project_structure/common_pkg/scheduler"
-	"go_project_structure/internal/infrastructure/repositories"
+	"go_project_structure/internal/infrastructure/repositories/user"
 	"time"
 
 	"github.com/go-chi/chi/v5"

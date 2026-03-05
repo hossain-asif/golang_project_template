@@ -1,4 +1,4 @@
-package cursor_pagination
+package seek_pagination
 
 type Direction string
 

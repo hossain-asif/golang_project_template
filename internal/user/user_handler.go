@@ -7,12 +7,14 @@ import (
 	"go_project_structure/common_pkg/logger"
 	"go_project_structure/common_pkg/pagination/cursor_pagination"
 	"go_project_structure/common_pkg/pagination/offset_pagination"
+	"go_project_structure/common_pkg/pagination/seek_pagination"
 	"go_project_structure/internal/dto"
 	"go_project_structure/internal/infrastructure/models"
 	enums "go_project_structure/utils/enums"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -144,67 +146,6 @@ func (uc *UserController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get all users end point", users)
 }
 
-func (uc *UserController) GetUsersByOffsetPagination(w http.ResponseWriter, r *http.Request) {
-	log := uc.userHandlerLog.WithContext(r.Context()).Method("GetUsersByOffsetPagination")
-
-	// Parse & validate pagination params
-	paginationParams := offset_pagination.Parse(r)
-
-	// Extract any additional filters
-	// _ := r.URL.Query().Get("name")
-
-	// call service layer
-	users, totalUsers, err := uc.UserService.GetUsersByOffsetPagination(r.Context(), paginationParams)
-	if err != nil {
-		log.Errorf("User fetch failed. %v", err)
-		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "Users fetch failed.", err)
-		return
-	}
-
-	// Build paginated response
-	resp := offset_pagination.NewResponse(users, paginationParams, totalUsers)
-
-	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get users by pagination end point", resp)
-}
-
-func (uc *UserController) GetUsersByCursorPagination(w http.ResponseWriter, r *http.Request) {
-	log := uc.userHandlerLog.WithContext(r.Context()).Method("GetUsersByCursorPagination")
-	log.Infof("Get users by cursor pagination start.")
-
-	// Parse & validate pagination params
-	paginationParams, err := cursor_pagination.ParseParams(r)
-	if err != nil {
-		log.Errorf("Invalid pagination params. %v", err)
-		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid pagination params", err)
-		return
-	}
-
-	// Extract any additional filters
-	// _ := r.URL.Query().Get("name")
-
-	// call service layer
-	users, err := uc.UserService.GetUsersByCursorPagination(r.Context(), paginationParams)
-	if err != nil {
-		log.Errorf("User fetch failed. %v", err)
-		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "Users fetch failed.", err)
-		return
-	}
-
-	// Build paginated response
-	hasMore := len(users) > paginationParams.Limit
-	if hasMore {
-		users = users[:paginationParams.Limit]
-	}
-
-	page, err := cursor_pagination.BuildPage(users, paginationParams, hasMore)
-	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get users by pagination end point", page)
-}
-
 func (uc *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	log := uc.userHandlerLog.WithContext(r.Context()).Method("UpdateUser")
 	log.Infof("User update start.")
@@ -323,4 +264,99 @@ func (uc *UserController) UploadUserCSV(w http.ResponseWriter, r *http.Request) 
 	log.Infof("CSV uploaded successfully.")
 	json.WriteJsonSuccessResponse(w, http.StatusCreated, "CSV uploaded successfully.", nil)
 
+}
+
+func (uc *UserController) GetUsersByOffsetPagination(w http.ResponseWriter, r *http.Request) {
+	log := uc.userHandlerLog.WithContext(r.Context()).Method("GetUsersByOffsetPagination")
+
+	// Parse & validate pagination params
+	paginationParams := offset_pagination.Parse(r)
+
+	// Extract any additional filters
+	// _ := r.URL.Query().Get("name")
+
+	// call service layer
+	users, totalUsers, err := uc.UserService.GetUsersByOffsetPagination(r.Context(), paginationParams)
+	if err != nil {
+		log.Errorf("User fetch failed. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "Users fetch failed.", err)
+		return
+	}
+
+	// Build paginated response
+	resp := offset_pagination.NewResponse(users, paginationParams, totalUsers)
+
+	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get users by pagination end point", resp)
+}
+
+func (uc *UserController) GetUsersByCursorPagination(w http.ResponseWriter, r *http.Request) {
+	log := uc.userHandlerLog.WithContext(r.Context()).Method("GetUsersByCursorPagination")
+	log.Infof("Get users by cursor pagination start.")
+
+	// Parse & validate pagination params
+	paginationParams, err := cursor_pagination.ParseParams(r)
+	if err != nil {
+		log.Errorf("Invalid pagination params. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid pagination params", err)
+		return
+	}
+
+	// Extract any additional filters
+	// _ := r.URL.Query().Get("name")
+
+	// call service layer
+	users, err := uc.UserService.GetUsersByCursorPagination(r.Context(), paginationParams)
+	if err != nil {
+		log.Errorf("User fetch failed. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "Users fetch failed.", err)
+		return
+	}
+
+	// Build paginated response
+	hasMore := len(users) > paginationParams.Limit
+	if hasMore {
+		users = users[:paginationParams.Limit]
+	}
+
+	page, err := cursor_pagination.BuildPage(users, paginationParams, hasMore)
+	if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get users by pagination end point", page)
+}
+
+func (uc *UserController) GetUsersBySeekPagination(w http.ResponseWriter, r *http.Request) {
+	log := uc.userHandlerLog.WithContext(r.Context()).Method("GetUsersBySeekPagination")
+	log.Infof("Get users by seek pagination start.")
+
+	req, err := seek_pagination.ParseParams(r)
+	if err != nil {
+		log.Errorf("Invalid pagination params. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid pagination params", err)
+		return
+	}
+
+	rail, err := uc.UserService.GetUsersBySeekPagination(r.Context(), req)
+	if err != nil {
+		log.Errorf("failed to fetch users. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "failed to fetch users", err)
+		return
+	}
+
+	// ── 4. Count total new items for the session badge ────────────────────
+	var totalNew int64
+	if req.Cursor != nil {
+		totalNew, _ = uc.UserService.CountUsersNewSince(r.Context(), req.Cursor.AnchorCreatedAt, req.Cursor.AnchorID)
+	}
+
+	// ── 5. Build response (generic — works for any Entity) ────────────────
+	resp := seek_pagination.BuildResponse(rail, req, totalNew)
+
+	if totalNew > 0 {
+		w.Header().Set("X-New-Items", strconv.FormatInt(totalNew, 10))
+	}
+
+	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get users by pagination end point", resp)
 }

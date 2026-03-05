@@ -6,11 +6,13 @@ import (
 	"go_project_structure/common_pkg/logger"
 	"go_project_structure/common_pkg/pagination/cursor_pagination"
 	"go_project_structure/common_pkg/pagination/offset_pagination"
+	"go_project_structure/common_pkg/pagination/seek_pagination"
 	env "go_project_structure/config/env"
 	"go_project_structure/internal/dto"
 	"go_project_structure/internal/infrastructure/models"
-	"go_project_structure/internal/infrastructure/repositories"
+	repositories "go_project_structure/internal/infrastructure/repositories/user"
 	"go_project_structure/utils/authentication"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -26,6 +28,8 @@ type UserService interface {
 
 	GetUsersByOffsetPagination(ctx context.Context, p offset_pagination.Params) ([]*models.User, int64, error)
 	GetUsersByCursorPagination(ctx context.Context, p cursor_pagination.Params) ([]*models.User, error)
+	GetUsersBySeekPagination(ctx context.Context, p seek_pagination.Params) (seek_pagination.RailResult[models.User], error)
+	CountUsersNewSince(ctx context.Context, since time.Time, sinceID uint) (int64, error)
 
 	ExportUsersAsCSV(ctx context.Context) (string, error)
 	CreateUserViaTnx(ctx context.Context, users [][]string) (string, error)
@@ -143,6 +147,28 @@ func (us *UserServiceImpl) GetUsersByCursorPagination(ctx context.Context, p cur
 		return nil, err
 	}
 	return users, nil
+}
+
+func (us *UserServiceImpl) GetUsersBySeekPagination(ctx context.Context, p seek_pagination.Params) (seek_pagination.RailResult[models.User], error) {
+	log := us.userServiceLog.Method("GetUsersBySeekPagination").WithContext(ctx)
+
+	users, err := us.userRepository.ListUsersSeekPagination(ctx, p)
+	if err != nil {
+		log.Errorf("Error fetching all users: %v\n", err)
+		return seek_pagination.RailResult[models.User]{}, err
+	}
+	return users, nil
+}
+
+func (us *UserServiceImpl) CountUsersNewSince(ctx context.Context, since time.Time, sinceID uint) (int64, error) {
+	log := us.userServiceLog.Method("CountUsersNewSince").WithContext(ctx)
+
+	totalUsers, err := us.userRepository.CountUsersNewSince(ctx, since, sinceID)
+	if err != nil {
+		log.Errorf("Error fetching all users: %v\n", err)
+		return totalUsers, err
+	}
+	return totalUsers, nil
 }
 
 func (us *UserServiceImpl) UpdateUser(ctx context.Context, id string, updatePayload *dto.UpdateUserRequest) (string, error) {

@@ -46,6 +46,7 @@ func (ur *UserRouter) v1() http.Handler {
 		// pagination
 		r.Get("/profile/offset", ur.userController.GetUsersByOffsetPagination)
 		r.Get("/profile/cursor", ur.userController.GetUsersByCursorPagination)
+		r.Get("/profile/seek", ur.userController.GetUsersBySeekPagination)
 
 		r.Route("/profile/{id}", func(r chi.Router) {
 			r.Get("/", ur.userController.GetUserById)
