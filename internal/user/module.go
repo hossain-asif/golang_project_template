@@ -26,7 +26,7 @@ func (m *UserModule) RegisterRoutes(db *gorm.DB, r chi.Router, fs *file_system.F
 	uc := NewUserController(m.svc, fs) // local variable, not stored
 	NewUserRouter(uc).Register(r)
 }
-func (m *UserModule) RegisterTasks(db *gorm.DB) []scheduler.Task {
+func (m *UserModule) RegisterTasks(db *gorm.DB, fs *file_system.FileStore) []scheduler.Task {
 	return []scheduler.Task{
 		{
 			Name:     "get-all-users",
@@ -41,6 +41,14 @@ func (m *UserModule) RegisterTasks(db *gorm.DB) []scheduler.Task {
 			Interval: 50 * time.Minute,
 			Fn: func(ctx context.Context) error {
 				_, err := m.svc.ExportUsersAsCSV(ctx)
+				return err
+			},
+		},
+		{
+			Name:     "text file updation",
+			Interval: 1 * time.Minute,
+			Fn: func(ctx context.Context) error {
+				err := fs.RebuildIfChanged()
 				return err
 			},
 		},

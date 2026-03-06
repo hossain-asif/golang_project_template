@@ -10,5 +10,5 @@ import (
 
 type Module interface {
 	RegisterRoutes(db *gorm.DB, r chi.Router, fs *file_system.FileStore)
-	RegisterTasks(db *gorm.DB) []scheduler.Task
+	RegisterTasks(db *gorm.DB, fs *file_system.FileStore) []scheduler.Task
 }

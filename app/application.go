@@ -75,7 +75,7 @@ func initModuleRegistry(ctx context.Context, fs *file_system.FileStore) (*chi.Mu
 	var allTasks []scheduler.Task
 	for _, m := range router.Modules {
 		m.RegisterRoutes(db, rootRouter, fs)
-		allTasks = append(allTasks, m.RegisterTasks(db)...)
+		allTasks = append(allTasks, m.RegisterTasks(db, fs)...)
 	}
 	go scheduler.TaskAssignment(ctx, allTasks)
 
