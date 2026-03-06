@@ -8,6 +8,7 @@ import (
 	"go_project_structure/common_pkg/pagination/cursor_pagination"
 	"go_project_structure/common_pkg/pagination/offset_pagination"
 	"go_project_structure/common_pkg/pagination/seek_pagination"
+	"go_project_structure/common_pkg/storage/file_system"
 	"go_project_structure/internal/dto"
 	"go_project_structure/internal/infrastructure/models"
 	enums "go_project_structure/utils/enums"
@@ -23,12 +24,14 @@ import (
 type UserController struct {
 	UserService    UserService
 	userHandlerLog *logger.ScopeLogger
+	fileStore      *file_system.FileStore
 }
 
-func NewUserController(_userService UserService) *UserController {
+func NewUserController(_userService UserService, fs *file_system.FileStore) *UserController {
 	return &UserController{
 		UserService:    _userService,
 		userHandlerLog: logger.Log.Scope("", "user", "user_handler"),
+		fileStore: fs,
 	}
 }
 
@@ -359,4 +362,28 @@ func (uc *UserController) GetUsersBySeekPagination(w http.ResponseWriter, r *htt
 	}
 
 	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get users by pagination end point", resp)
+}
+
+// file system
+func (uc *UserController) GetUserFromFile(w http.ResponseWriter, r *http.Request) {
+	log := uc.userHandlerLog.WithContext(r.Context()).Method("GetUserFromFile")
+	log.Infof("Get User From File start.")
+
+	id := chi.URLParam(r, "id")
+
+	var user dto.UserFromTxt
+	bytes, err := uc.fileStore.GetRaw(id)
+	if err != nil {
+		log.Errorf("User fetch failed. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User fetch failed.", err)
+		return
+	}
+	err = user.UnmarshalJSON(bytes)
+	if err != nil {
+		log.Errorf("User unmarshal failed. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User unmarshal failed.", err)
+		return
+	}
+
+	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get User From File end point", user)
 }

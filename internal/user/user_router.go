@@ -48,6 +48,9 @@ func (ur *UserRouter) v1() http.Handler {
 		r.Get("/profile/cursor", ur.userController.GetUsersByCursorPagination)
 		r.Get("/profile/seek", ur.userController.GetUsersBySeekPagination)
 
+		// file system
+		r.Get("/user/text/{id}", ur.userController.GetUserFromFile)
+
 		r.Route("/profile/{id}", func(r chi.Router) {
 			r.Get("/", ur.userController.GetUserById)
 			r.Delete("/", ur.userController.DeleteUser)

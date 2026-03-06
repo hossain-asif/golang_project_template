@@ -1,7 +1,9 @@
 package dto
 
 import (
+	"encoding/json"
 	"go_project_structure/utils/custom_validation"
+	"strconv"
 	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation"
@@ -17,17 +19,17 @@ type RegisterUserRequest struct {
 
 func (r RegisterUserRequest) Validate() error {
 	return validation.ValidateStruct(&r,
-		validation.Field(&r.Name, 
+		validation.Field(&r.Name,
 			validation.Required,
 			validation.Length(3, 255),
 			validation.By(custom_validation.NameValidator),
 		),
 		validation.Field(&r.Email,
 			validation.Required,
-			 is.Email,
+			is.Email,
 		),
-		validation.Field(&r.Password, 
-			validation.Required, 
+		validation.Field(&r.Password,
+			validation.Required,
 			validation.Length(8, 20),
 			validation.By(custom_validation.PasswordValidator),
 		),
@@ -92,4 +94,34 @@ type UserCSV struct {
 	UpdatedAt time.Time `csv:"updated_at"`
 }
 
+type UserFromTxt struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
 
+func (u *UserFromTxt) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		ID    interface{} `json:"id"`
+		Name  string      `json:"name"`
+		Email string      `json:"email"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	switch v := raw.ID.(type) {
+	case float64:
+		u.ID = int(v) // JSON number → int
+	case string:
+		id, err := strconv.Atoi(v)
+		if err != nil {
+			return err
+		}
+		u.ID = id // JSON string "1" → int 1
+	}
+
+	u.Name = raw.Name
+	u.Email = raw.Email
+	return nil
+}
