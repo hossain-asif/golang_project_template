@@ -48,7 +48,7 @@ func (m *UserModule) RegisterTasks(db *gorm.DB, fs *file_system.FileStore) []sch
 			Name:     "text file updation",
 			Interval: 1 * time.Minute,
 			Fn: func(ctx context.Context) error {
-				err := fs.RebuildIfChanged()
+				err := fs.RebuildIfCheckSumChanged()
 				return err
 			},
 		},

@@ -145,6 +145,7 @@ func (fs *FileStore) RebuildIfCheckSumChanged() error {
 
 	fs.index = make(map[string]Index)
 	if err := fs.buildIndex(); err != nil {
+		log.Errorf("Failed to rebuild index. %v", err)
 		return err
 	}
 

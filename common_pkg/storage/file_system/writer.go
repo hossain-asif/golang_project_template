@@ -74,11 +74,11 @@ func (fs *FileStore) AddRecord(record interface{}) error {
 	}
 
     // update checksum after write so scheduler doesn't rebuild unnecessarily
-    checksum, err := fs.computeChecksum()
-    if err != nil {
-        return err
-    }
-    fs.lastChecksum = checksum
+    // checksum, err := fs.computeChecksum()
+    // if err != nil {
+    //     return err
+    // }
+    // fs.lastChecksum = checksum
 
 	// Rebuild index to include new record
 	// fs.index = make(map[string]Index)
