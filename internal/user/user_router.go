@@ -50,6 +50,7 @@ func (ur *UserRouter) v1() http.Handler {
 
 		// file system
 		r.Get("/user/text/{id}", ur.userController.GetUserFromFile)
+		r.Post("/user/text", ur.userController.AddUserToFile)
 
 		r.Route("/profile/{id}", func(r chi.Router) {
 			r.Get("/", ur.userController.GetUserById)

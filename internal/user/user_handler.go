@@ -31,7 +31,7 @@ func NewUserController(_userService UserService, fs *file_system.FileStore) *Use
 	return &UserController{
 		UserService:    _userService,
 		userHandlerLog: logger.Log.Scope("", "user", "user_handler"),
-		fileStore: fs,
+		fileStore:      fs,
 	}
 }
 
@@ -374,8 +374,8 @@ func (uc *UserController) GetUserFromFile(w http.ResponseWriter, r *http.Request
 	var user dto.UserFromTxt
 	bytes, err := uc.fileStore.GetRaw(id)
 	if err != nil {
-		log.Errorf("User fetch failed. %v", err)
-		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User fetch failed.", err)
+		log.Errorf("User fetch failed from text file. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User fetch failed from text file.", err)
 		return
 	}
 	err = user.UnmarshalJSON(bytes)
@@ -385,5 +385,35 @@ func (uc *UserController) GetUserFromFile(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get User From File end point", user)
+	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get User From text File end point", user)
+}
+
+// add user to file
+func (uc *UserController) AddUserToFile(w http.ResponseWriter, r *http.Request) {
+	log := uc.userHandlerLog.WithContext(r.Context()).Method("AddUserToFile")
+	log.Infof("Add User To File start.")
+
+	// decode request body INTO the struct first
+    var user dto.UserFromTxt
+    if payloadErr := json.ReadJsonBody(r, &user); payloadErr != nil {
+        log.Errorf("Json decoding error. %v", payloadErr)
+        json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json decoding error.", payloadErr)
+        return
+    }
+
+    // check if user already exists
+    idStr := strconv.Itoa(user.ID)
+    existing, _ := uc.fileStore.GetRaw(idStr)
+    if existing != nil {
+        log.Errorf("User already exists. id: %d", user.ID)
+        json.WriteJsonErrorResponse(w, http.StatusConflict, "User already exists.", nil)
+        return
+    }
+
+	if err := uc.fileStore.AddRecord(user); err != nil {
+		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "Add user failed", err)
+		return
+	}
+
+	json.WriteJsonSuccessResponse(w, http.StatusCreated, "User added in text file", nil)
 }

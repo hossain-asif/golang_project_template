@@ -125,3 +125,15 @@ func (u *UserFromTxt) UnmarshalJSON(data []byte) error {
 	u.Email = raw.Email
 	return nil
 }
+
+func (u UserFromTxt) MarshalJSON() ([]byte, error) {
+    return json.Marshal(&struct {
+        ID    string `json:"id"`   // ✅ force string output
+        Name  string `json:"name"`
+        Email string `json:"email"`
+    }{
+        ID:    strconv.Itoa(u.ID), // int → "11"
+        Name:  u.Name,
+        Email: u.Email,
+    })
+}

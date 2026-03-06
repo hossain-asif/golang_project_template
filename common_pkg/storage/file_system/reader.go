@@ -46,7 +46,7 @@ func NewFileStore(path string) (*FileStore, error) {
 }
 
 // buildIndex scans the file ONCE and stores byte offsets
-func (fs *FileStore) BuildIndex() error {
+func (fs *FileStore) buildIndex() error {
 	fs.file.Seek(0, 0) // reset to beginning
 
 	decoder := json.NewDecoder(fs.file)
@@ -71,16 +71,22 @@ func (fs *FileStore) BuildIndex() error {
 		}
 
 		endOffset := decoder.InputOffset()
-
-		fs.mu.Lock()
 		fs.index[id] = Index{
 			Offset: startOffset,
 			Length: int(endOffset - startOffset),
 		}
-		fs.mu.Unlock()
 	}
 	return nil
 }
+
+
+// public — acquires lock itself
+func (fs *FileStore) BuildIndex() error {
+    fs.mu.Lock()
+    defer fs.mu.Unlock()
+    return fs.buildIndex()
+}
+
 
 // GetRaw returns raw JSON bytes for a given id
 func (fs *FileStore) GetRaw(id string) ([]byte, error) {

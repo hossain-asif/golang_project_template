@@ -92,10 +92,10 @@ func (app *Application) Run() error {
 
 	// Build the index at startup (scans file ONCE)
 	fs, err := file_system.NewFileStore("./file_data/text_file/users.txt")
-    if err != nil {
-		appLog.Errorf("Failed to build file index.")
+	if err != nil {
+		appLog.Errorf("Failed to build file index: %v", err)
 		return err
-    }
+	}
     defer fs.Close()
 
 	// Register as default so controllers can use file_system.GetRecord()
