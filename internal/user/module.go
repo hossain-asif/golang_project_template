@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 	"go_project_structure/common_pkg/scheduler"
-	"go_project_structure/common_pkg/storage/file_system"
+	"go_project_structure/common_pkg/storage"
 	repositories "go_project_structure/internal/infrastructure/repositories/user"
 	"time"
 
@@ -21,12 +21,12 @@ func (m *UserModule) initUserDependency(db *gorm.DB) {
 	m.svc = NewUserService(m.repo)
 }
 
-func (m *UserModule) RegisterRoutes(db *gorm.DB, r chi.Router, fs *file_system.FileStore) {
+func (m *UserModule) RegisterRoutes(db *gorm.DB, r chi.Router, fs *storage.FileStore) {
 	m.initUserDependency(db)
 	uc := NewUserController(m.svc, fs) // local variable, not stored
 	NewUserRouter(uc).Register(r)
 }
-func (m *UserModule) RegisterTasks(db *gorm.DB, fs *file_system.FileStore) []scheduler.Task {
+func (m *UserModule) RegisterTasks(db *gorm.DB, fs *storage.FileStore) []scheduler.Task {
 	return []scheduler.Task{
 		{
 			Name:     "get-all-users",
@@ -47,8 +47,8 @@ func (m *UserModule) RegisterTasks(db *gorm.DB, fs *file_system.FileStore) []sch
 		{
 			Name:     "text file updation",
 			Interval: 1 * time.Minute,
-			Fn: func(ctx context.Context) error {
-				err := fs.RebuildIfCheckSumChanged()
+			Fn: func(ctx context.Context) error {	
+				err := fs.RebuildIfChecksumChanged()
 				return err
 			},
 		},

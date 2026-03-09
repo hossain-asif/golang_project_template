@@ -4,7 +4,7 @@ import (
 	"context"
 	"go_project_structure/common_pkg/logger"
 	"go_project_structure/common_pkg/scheduler"
-	"go_project_structure/common_pkg/storage/file_system"
+	"go_project_structure/common_pkg/storage"
 	dbConfig "go_project_structure/config/database"
 	config "go_project_structure/config/env"
 	"go_project_structure/internal/router"
@@ -45,7 +45,7 @@ func NewApplication(config Config) Application {
 	}
 }
 
-func initModuleRegistry(ctx context.Context, fs *file_system.FileStore) (*chi.Mux, error) {
+func initModuleRegistry(ctx context.Context, fs *storage.FileStore) (*chi.Mux, error) {
 
 	// setup mongodb
 	// hook, err := dbConfig.SetupMongoDB()
@@ -91,22 +91,23 @@ func (app *Application) Run() error {
 	logger.InitLogger()
 
 	// Build the index at startup (scans file ONCE)
-	fs, err := file_system.NewFileStore("./file_data/text_file/users.txt")
+	fileDirectory := config.GetString("KV_FILE_DIRECTORY", "")
+	fs, err := storage.NewFileStore(fileDirectory, storage.FormatKV)
 	if err != nil {
 		appLog.Errorf("Failed to build file index: %v", err)
 		return err
 	}
-    defer fs.Close()
+	defer fs.Close()
 
 	// Register as default so controllers can use file_system.GetRecord()
-	file_system.SetDefault(fs)
+	storage.SetDefault(fs)
 
 	// initialize module registry
 	rootRouter, err := initModuleRegistry(ctx, fs)
 	if err != nil {
 		return err
 	}
-	
+
 	// server configuration
 	server := &http.Server{
 		Addr:         app.Config.Addr,

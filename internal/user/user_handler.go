@@ -8,7 +8,7 @@ import (
 	"go_project_structure/common_pkg/pagination/cursor_pagination"
 	"go_project_structure/common_pkg/pagination/offset_pagination"
 	"go_project_structure/common_pkg/pagination/seek_pagination"
-	"go_project_structure/common_pkg/storage/file_system"
+	"go_project_structure/common_pkg/storage"
 	"go_project_structure/internal/dto"
 	"go_project_structure/internal/infrastructure/models"
 	enums "go_project_structure/utils/enums"
@@ -24,10 +24,10 @@ import (
 type UserController struct {
 	UserService    UserService
 	userHandlerLog *logger.ScopeLogger
-	fileStore      *file_system.FileStore
+	fileStore      *storage.FileStore
 }
 
-func NewUserController(_userService UserService, fs *file_system.FileStore) *UserController {
+func NewUserController(_userService UserService, fs *storage.FileStore) *UserController {
 	return &UserController{
 		UserService:    _userService,
 		userHandlerLog: logger.Log.Scope("", "user", "user_handler"),
@@ -394,21 +394,21 @@ func (uc *UserController) AddUserToFile(w http.ResponseWriter, r *http.Request) 
 	log.Infof("Add User To File start.")
 
 	// decode request body INTO the struct first
-    var user dto.UserFromTxt
-    if payloadErr := json.ReadJsonBody(r, &user); payloadErr != nil {
-        log.Errorf("Json decoding error. %v", payloadErr)
-        json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json decoding error.", payloadErr)
-        return
-    }
+	var user dto.UserFromTxt
+	if payloadErr := json.ReadJsonBody(r, &user); payloadErr != nil {
+		log.Errorf("Json decoding error. %v", payloadErr)
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json decoding error.", payloadErr)
+		return
+	}
 
-    // check if user already exists
-    idStr := strconv.Itoa(user.ID)
-    existing, _ := uc.fileStore.GetRaw(idStr)
-    if existing != nil {
-        log.Errorf("User already exists. id: %d", user.ID)
-        json.WriteJsonErrorResponse(w, http.StatusConflict, "User already exists.", nil)
-        return
-    }
+	// check if user already exists
+	idStr := strconv.Itoa(user.ID)
+	existing, _ := uc.fileStore.GetRaw(idStr)
+	if existing != nil {
+		log.Errorf("User already exists. id: %d", user.ID)
+		json.WriteJsonErrorResponse(w, http.StatusConflict, "User already exists.", nil)
+		return
+	}
 
 	if err := uc.fileStore.AddRecord(user); err != nil {
 		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "Add user failed", err)
@@ -416,4 +416,67 @@ func (uc *UserController) AddUserToFile(w http.ResponseWriter, r *http.Request) 
 	}
 
 	json.WriteJsonSuccessResponse(w, http.StatusCreated, "User added in text file", nil)
+}
+
+// UpdateUserInFile updates an existing user record in the file store.
+func (uc *UserController) UpdateUserInFile(w http.ResponseWriter, r *http.Request) {
+	log := uc.userHandlerLog.WithContext(r.Context()).Method("UpdateUserInFile")
+	log.Infof("Update User In File start.")
+
+	id := chi.URLParam(r, "id")
+
+	// check if user exists before attempting update
+	existing, _ := uc.fileStore.GetRaw(id)
+	if existing == nil {
+		log.Errorf("User not found. id: %s", id)
+		json.WriteJsonErrorResponse(w, http.StatusNotFound, "User not found.", nil)
+		return
+	}
+
+	// decode request body into the struct
+	var user dto.UserFromTxt
+	if payloadErr := json.ReadJsonBody(r, &user); payloadErr != nil {
+		log.Errorf("Json decoding error. %v", payloadErr)
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json decoding error.", payloadErr)
+		return
+	}
+
+	// ensure the id in the URL matches the id in the body
+	if strconv.Itoa(user.ID) != id {
+		log.Errorf("Id mismatch. url id: %s, body id: %d", id, user.ID)
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Id in URL and body do not match.", nil)
+		return
+	}
+
+	if err := uc.fileStore.UpdateRecord(id, user); err != nil {
+		log.Errorf("User update failed in text file. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User update failed in text file.", err)
+		return
+	}
+
+	json.WriteJsonSuccessResponse(w, http.StatusOK, "User updated in text file", nil)
+}
+
+// DeleteUserFromFile removes a user record from the file store.
+func (uc *UserController) DeleteUserFromFile(w http.ResponseWriter, r *http.Request) {
+	log := uc.userHandlerLog.WithContext(r.Context()).Method("DeleteUserFromFile")
+	log.Infof("Delete User From File start.")
+
+	id := chi.URLParam(r, "id")
+
+	// check if user exists before attempting delete
+	existing, _ := uc.fileStore.GetRaw(id)
+	if existing == nil {
+		log.Errorf("User not found. id: %s", id)
+		json.WriteJsonErrorResponse(w, http.StatusNotFound, "User not found.", nil)
+		return
+	}
+
+	if err := uc.fileStore.DeleteRecord(id); err != nil {
+		log.Errorf("User delete failed from text file. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User delete failed from text file.", err)
+		return
+	}
+
+	json.WriteJsonSuccessResponse(w, http.StatusOK, "User deleted from text file", nil)
 }

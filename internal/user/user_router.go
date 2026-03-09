@@ -49,8 +49,10 @@ func (ur *UserRouter) v1() http.Handler {
 		r.Get("/profile/seek", ur.userController.GetUsersBySeekPagination)
 
 		// file system
-		r.Get("/user/text/{id}", ur.userController.GetUserFromFile)
-		r.Post("/user/text", ur.userController.AddUserToFile)
+		r.Get("/user/file/{id}", ur.userController.GetUserFromFile)
+		r.Post("/user/file", ur.userController.AddUserToFile)
+		r.Patch("/user/file/{id}", ur.userController.UpdateUserInFile)
+		r.Delete("/user/file/{id}", ur.userController.DeleteUserFromFile)
 
 		r.Route("/profile/{id}", func(r chi.Router) {
 			r.Get("/", ur.userController.GetUserById)
