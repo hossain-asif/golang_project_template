@@ -13,8 +13,8 @@ type User struct {
 	Password string `gorm:"size:255;not null"`
 
 	// One-to-many: a user can have multiple 2FA tokens
-	TwoFATokens []UserTwoFAToken `gorm:"foreignKey:UserID"`
-	Roles       []Role           `gorm:"foreignKey:UserID"`
+	// TwoFATokens []UserTwoFAToken `gorm:"foreignKey:UserID"`
+	// Roles       []Role           `gorm:"foreignKey:UserID"`
 }
 
 // Implement Cursorable interface — one-time, two lines per model

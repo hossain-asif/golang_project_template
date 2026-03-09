@@ -2,9 +2,11 @@ package user
 
 import (
 	"context"
+	"fmt"
 	"go_project_structure/common_pkg/scheduler"
 	"go_project_structure/common_pkg/storage"
 	repositories "go_project_structure/internal/infrastructure/repositories/user"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -12,24 +14,47 @@ import (
 )
 
 type UserModule struct {
-	repo repositories.UserRepository // data layer
-	svc  UserService                 // business layer
+	repo repositories.UserRepository
+	svc  UserService
+	fs   *storage.FileStore
+	once sync.Once
 }
 
-func (m *UserModule) initUserDependency(db *gorm.DB) {
-	m.repo = repositories.NewUserRepository(db)
-	m.svc = NewUserService(m.repo)
+// Init wires all user dependencies.
+// Safe to call multiple times — only executes once due to sync.Once.
+// Returns an error if called with a nil db.
+func (m *UserModule) InitDependency(db *gorm.DB, fs *storage.FileStore) error {
+	var initErr error
+
+	m.once.Do(func() {
+		if db == nil {
+			initErr = fmt.Errorf("user module: Init called with nil db")
+			return
+		}
+		m.fs = fs
+		m.repo = repositories.NewUserRepository(db)
+		m.svc = NewUserService(m.repo)
+	})
+	return initErr
 }
 
-func (m *UserModule) RegisterRoutes(db *gorm.DB, r chi.Router, fs *storage.FileStore) {
-	m.initUserDependency(db)
-	uc := NewUserController(m.svc, fs) // local variable, not stored
+func (m *UserModule) RegisterRoutes(r chi.Router) {
+	if m.svc == nil || m.repo == nil {
+		panic("user module: RegisterRoutes called before Init")
+	}
+	uc := NewUserController(m.svc, m.fs)
 	NewUserRouter(uc).Register(r)
 }
-func (m *UserModule) RegisterTasks(db *gorm.DB, fs *storage.FileStore) []scheduler.Task {
+
+
+func (m *UserModule) RegisterTasks() []scheduler.Task {
+	if m.svc == nil || m.repo == nil {
+		panic("user module: RegisterTasks called before InitUserDependency")
+	}
+
 	return []scheduler.Task{
 		{
-			Name:     "get-all-users",
+			Name:     "user.sync-all",
 			Interval: 24 * time.Hour,
 			Fn: func(ctx context.Context) error {
 				_, err := m.repo.GetAll(ctx)
@@ -37,7 +62,7 @@ func (m *UserModule) RegisterTasks(db *gorm.DB, fs *storage.FileStore) []schedul
 			},
 		},
 		{
-			Name:     "auto-export-csv",
+			Name:     "user.auto-export-csv",
 			Interval: 50 * time.Minute,
 			Fn: func(ctx context.Context) error {
 				_, err := m.svc.ExportUsersAsCSV(ctx)
@@ -45,11 +70,10 @@ func (m *UserModule) RegisterTasks(db *gorm.DB, fs *storage.FileStore) []schedul
 			},
 		},
 		{
-			Name:     "text file updation",
-			Interval: 1 * time.Minute,
-			Fn: func(ctx context.Context) error {	
-				err := fs.RebuildIfChecksumChanged()
-				return err
+			Name:     "user.file-rebuild",
+			Interval: 59 * time.Minute,
+			Fn: func(ctx context.Context) error {
+				return m.fs.RebuildIfChecksumChanged()
 			},
 		},
 	}

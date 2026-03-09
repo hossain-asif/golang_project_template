@@ -50,12 +50,10 @@ type UpdateUserRequest struct {
 func (u UpdateUserRequest) Validate() error {
 	return validation.ValidateStruct(&u,
 		validation.Field(&u.Name,
-			validation.Required,
 			validation.Length(3, 255),
 			validation.By(custom_validation.NameValidator),
 		),
 		validation.Field(&u.Email,
-			validation.Required,
 			is.Email,
 		),
 	)

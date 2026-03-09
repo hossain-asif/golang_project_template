@@ -80,15 +80,16 @@ func (uc *UserController) LoginUser(w http.ResponseWriter, r *http.Request) {
 	log := uc.userHandlerLog.WithContext(r.Context()).Method("LoginUser")
 	log.Infof("User login start.")
 
-	var requestPayload = dto.LoginUserRequest{}
-	err := json.ReadJsonBody(r, &requestPayload)
-	if err != nil {
-		log.Errorf("Invalid login request payload. %v", err)
-		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid request payload", err)
+	RequestPayload, ok := r.Context().Value(enums.CtxLoginPayload).(dto.LoginUserRequest)
+	if !ok {
+
+		log.Errorf("Invalid request context")
+
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid request context", nil)
 		return
 	}
 
-	token, err := uc.UserService.LoginUser(r.Context(), &requestPayload)
+	token, err := uc.UserService.LoginUser(r.Context(), &RequestPayload)
 	if err != nil {
 		log.Errorf("Login failed.")
 		json.WriteJsonErrorResponse(w, http.StatusUnauthorized, "Login failed.", err)

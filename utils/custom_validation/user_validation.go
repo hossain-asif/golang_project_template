@@ -8,8 +8,17 @@ import (
 func NameValidator(value interface{}) error {
 	nameRegex := regexp.MustCompile(`^[a-zA-Z ]+$`)
 
-	name, ok := value.(string)
-	if !ok {
+	var name string
+
+	switch v := value.(type) {
+	case string:
+		name = v
+	case *string:
+		if v == nil {
+			return nil
+		}
+		name = *v
+	default:
 		return errors.New("invalid name format")
 	}
 

@@ -1,0 +1,28 @@
+package app
+
+import (
+	"fmt"
+	"go_project_structure/common_pkg/logger"
+	dbConfig "go_project_structure/config/database"
+
+	"gorm.io/gorm"
+)
+
+func SetupDB() (*gorm.DB, error) {
+	db, err := dbConfig.SetupDB()
+	if err != nil {
+		appLog.Method("setupDB").WithError(err).Error("Error setting up database.")
+		return nil, fmt.Errorf("database setup: %w", err)
+	}
+	return db, nil
+}
+
+func setupMongoHook() (*dbConfig.MongoDB, error) {
+	hook, err := dbConfig.SetupMongoDB()
+	if err != nil {
+		appLog.Method("setupMongoHook").WithError(err).Error("Failed to connect to MongoDB log hook.")
+		return nil, fmt.Errorf("mongo hook setup: %w", err)
+	}
+	logger.AddHook(hook)
+	return hook, nil
+}

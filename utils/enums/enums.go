@@ -9,4 +9,5 @@ const (
 	CtxRequestID           contextKey = "requestId"
 	CtxUserEmail           contextKey = "email"
 	CtxUserSlug            contextKey = "user_slug"
+	CtxLoginPayload        contextKey = "login_payload"
 )

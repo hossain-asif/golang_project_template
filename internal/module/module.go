@@ -9,6 +9,7 @@ import (
 )
 
 type Module interface {
-	RegisterRoutes(db *gorm.DB, r chi.Router, fs *storage.FileStore)
-	RegisterTasks(db *gorm.DB, fs *storage.FileStore) []scheduler.Task
+	InitDependency(db *gorm.DB, fs *storage.FileStore) error
+	RegisterRoutes(r chi.Router)
+	RegisterTasks() []scheduler.Task
 }

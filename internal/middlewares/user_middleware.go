@@ -97,7 +97,7 @@ func UserLoginRequestValidator(next http.Handler) http.Handler {
 		log.Infof("user login payload validated.")
 
 		req_context := r.Context()                                                    // parent context -> get the context from the request
-		ctx := context.WithValue(req_context, enums.CtxUpdatePayload, RequestPayload) // create a new context with the validated payload
+		ctx := context.WithValue(req_context, enums.CtxLoginPayload, RequestPayload) // create a new context with the validated payload
 		r = r.WithContext(ctx)
 		log.Infof("user login context setup.")
 

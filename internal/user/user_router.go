@@ -37,6 +37,14 @@ func (ur *UserRouter) v1() http.Handler {
 	// Protected (JWT required)
 	r.Group(func(r chi.Router) {
 		r.Use(middlewares.JwtAuthMiddleware)
+
+		r.Route("/profile/{id}", func(r chi.Router) {
+			r.Get("/", ur.userController.GetUserById)
+			r.Delete("/", ur.userController.DeleteUser)
+			r.With(middlewares.RateLimitMiddleware, middlewares.UserUpdateRequestValidator).
+				Patch("/", ur.userController.UpdateUser)
+		})
+
 		r.Get("/profile/all", ur.userController.GetAllUsers)
 		r.Get("/profile/export", ur.userController.ExportUsersCSV)
 		r.Get("/profile/download", ur.userController.DownloadFileHandler)
@@ -54,12 +62,7 @@ func (ur *UserRouter) v1() http.Handler {
 		r.Patch("/user/file/{id}", ur.userController.UpdateUserInFile)
 		r.Delete("/user/file/{id}", ur.userController.DeleteUserFromFile)
 
-		r.Route("/profile/{id}", func(r chi.Router) {
-			r.Get("/", ur.userController.GetUserById)
-			r.Delete("/", ur.userController.DeleteUser)
-			r.With(middlewares.RateLimitMiddleware, middlewares.UserUpdateRequestValidator).
-				Patch("/", ur.userController.UpdateUser)
-		})
+
 	})
 
 	// proxy
