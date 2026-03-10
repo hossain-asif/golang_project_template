@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -25,6 +26,7 @@ type UserController struct {
 	UserService    UserService
 	userHandlerLog *logger.ScopeLogger
 	fileStore      *storage.FileStore
+	cache          *UserListCache
 }
 
 func NewUserController(_userService UserService, fs *storage.FileStore) *UserController {
@@ -32,6 +34,7 @@ func NewUserController(_userService UserService, fs *storage.FileStore) *UserCon
 		UserService:    _userService,
 		userHandlerLog: logger.Log.Scope("", "user", "user_handler"),
 		fileStore:      fs,
+		cache:          NewUserListCache(1 * time.Minute),
 	}
 }
 
@@ -66,6 +69,8 @@ func (uc *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User registration failed.", err)
 		return
 	}
+
+	uc.cache.Purge()
 
 	log.Infof("User registered successfully.")
 
@@ -139,12 +144,33 @@ func (uc *UserController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	log := uc.userHandlerLog.WithContext(r.Context()).Method("GetAllUsers")
 	log.Infof("Get all users start.")
 
-	users, err := uc.UserService.GetAllUsers(r.Context())
-	if err != nil {
-		log.Errorf("User fetch failed. %v", err)
-		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User fetch failed.", err)
-		return
+	// Try in-memory cache first
+	users, hit := uc.cache.Get()
+
+	if !hit {
+		log.Infof("Cache miss — fetching from DB.")
+
+		var err error
+		users, err = uc.UserService.GetAllUsers(r.Context())
+		if err != nil {
+			log.Errorf("User fetch failed. %v", err)
+			json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User fetch failed.", err)
+			return
+		}
+
+		uc.cache.Set(users)
+		log.Infof("Users stored in cache.")
+	} else {
+		log.Infof("Cache hit — serving from memory.")
 	}
+
+	/*
+	HTTP cache headers (browser / CDN layer on top)
+	public                 → browsers AND CDNs (Cloudflare, CloudFront) may cache
+	max-age=86400          → cached response is fresh for 24 hours
+	stale-while-revalidate → after 24h, serve stale instantly while refreshing in background
+	*/
+	w.Header().Set("Cache-Control", "public, max-age=60, stale-while-revalidate=30")
 
 	log.Infof("All users fetched successfully.")
 	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get all users end point", users)
@@ -170,6 +196,8 @@ func (uc *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	uc.cache.Purge()
+
 	log.Infof("User updated successfully.")
 	json.WriteJsonSuccessResponse(w, http.StatusOK, message, nil)
 }
@@ -186,6 +214,8 @@ func (uc *UserController) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User delete failed.", err)
 		return
 	}
+
+	uc.cache.Purge()
 
 	log.Infof("User deleted successfully.")
 	json.WriteJsonSuccessResponse(w, http.StatusOK, message, nil)
