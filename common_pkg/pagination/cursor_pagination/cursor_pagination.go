@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go_project_structure/common_pkg/pagination/helper"
 	"strings"
 	"time"
 )
@@ -13,7 +14,7 @@ import (
 type Cursor struct {
 	ID        uint      `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
-	Direction Direction `json:"direction"`
+	Direction helper.Direction `json:"direction"`
 }
 
 // Encode encodes the cursor to a base64 string safe for URLs

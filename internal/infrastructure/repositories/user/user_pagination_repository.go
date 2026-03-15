@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go_project_structure/common_pkg/pagination/cursor_pagination"
+	"go_project_structure/common_pkg/pagination/helper"
 	"go_project_structure/common_pkg/pagination/offset_pagination"
 	"go_project_structure/common_pkg/pagination/seek_pagination"
 	"go_project_structure/internal/infrastructure/models"
@@ -69,16 +70,16 @@ func (u *UserRepositoryImpl) ListUsersCursorPagination(ctx context.Context, p cu
 
 	if p.Cursor != nil {
 		switch p.Direction {
-		case cursor_pagination.DirectionNext:
+		case helper.DirectionNext:
 			query += " AND ((created_at < ?) OR (created_at = ? AND id < ?))"
 			args = append(args, p.Cursor.CreatedAt, p.Cursor.CreatedAt, p.Cursor.ID)
-		case cursor_pagination.DirectionPrev:
+		case helper.DirectionPrev:
 			query += " AND ((created_at > ?) OR (created_at = ? AND id > ?))"
 			args = append(args, p.Cursor.CreatedAt, p.Cursor.CreatedAt, p.Cursor.ID)
 		}
 	}
 
-	if p.Direction == cursor_pagination.DirectionNext {
+	if p.Direction == helper.DirectionNext {
 		query += " ORDER BY created_at DESC, id DESC"
 	} else {
 		query += " ORDER BY created_at ASC, id ASC"
@@ -103,7 +104,7 @@ func (u *UserRepositoryImpl) ListUsersSeekPagination(ctx context.Context, params
 		return u.seekFirstPage(ctx, params.Limit)
 	}
 
-	if params.Direction == seek_pagination.DirectionPrev {
+	if params.Direction == helper.DirectionPrev {
 		return u.seekPrevPage(ctx, params.Cursor, params.Limit)
 	}
 

@@ -1,6 +1,9 @@
 package cursor_pagination
 
-import "time"
+import (
+	"go_project_structure/common_pkg/pagination/helper"
+	"time"
+)
 
 // Cursorable must be implemented by any model you want to paginate
 type Cursorable interface {
@@ -40,10 +43,10 @@ func buildPageInfo[T Cursorable](data []T, params Params, hasMore bool) (PageInf
 	}
 
 	switch params.Direction {
-	case DirectionNext:
+	case helper.DirectionNext:
 		info.HasNextPage = hasMore
 		info.HasPrevPage = params.Cursor != nil
-	case DirectionPrev:
+	case helper.DirectionPrev:
 		info.HasPrevPage = hasMore
 		info.HasNextPage = params.Cursor != nil
 	}
@@ -62,7 +65,7 @@ type Page[T Cursorable] struct {
 // Call this from any repository — no domain-specific code needed.
 func BuildPage[T Cursorable](data []T, params Params, hasMore bool) (Page[T], error) {
 	// Reverse for prev-direction so callers always get newest-first
-	if params.Direction == DirectionPrev {
+	if params.Direction == helper.DirectionPrev {
 		for i, j := 0, len(data)-1; i < j; i, j = i+1, j-1 {
 			data[i], data[j] = data[j], data[i]
 		}

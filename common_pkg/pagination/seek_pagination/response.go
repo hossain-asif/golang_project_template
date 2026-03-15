@@ -1,7 +1,9 @@
 package seek_pagination
 
-import "time"
-
+import (
+	"go_project_structure/common_pkg/pagination/helper"
+	"time"
+)
 
 // Entity is the constraint every paginated model must satisfy.
 // The repo uses GetID / GetCreatedAt to build cursors without knowing the concrete type.
@@ -45,7 +47,7 @@ func BuildResponse[T Entity](rail RailResult[T], params Params, totalNew int64) 
 		NewCount: len(rail.NewItems),
 		TotalNew: totalNew,
 		HasNext:  rail.HasMoreNew || rail.HasMoreOld,
-		HasPrev:  params.Cursor != nil && params.Direction == DirectionNext,
+		HasPrev:  params.Cursor != nil && params.Direction == helper.DirectionNext,
 		Limit:    params.Limit,
 	}
 

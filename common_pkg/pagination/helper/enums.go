@@ -1,4 +1,4 @@
-package seek_pagination
+package helper
 
 type Direction string
 

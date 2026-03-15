@@ -12,23 +12,23 @@ type Params struct {
 	Offset int `json:"offset"`
 }
 
-// Parse extracts and validates pagination params from request query string.
+// ParseParams extracts and validates pagination params from request query string.
 // Accepts ?page=1&limit=20
-func Parse(r *http.Request) Params {
+func ParseParams(r *http.Request) Params {
 	q := r.URL.Query()
 
-	page := pagination.ParseInt(q.Get("page"), DefaultPage)
-	limit := pagination.ParseInt(q.Get("limit"), DefaultLimit)
+	page := helper.ParseInt(q.Get("page"), helper.DefaultPage)
+	limit := helper.ParseInt(q.Get("limit"), helper.DefaultLimit)
 
 	// Clamp values to safe ranges
 	if page < 1 {
-		page = 1
+		page = helper.DefaultPage
 	}
 	if limit < 1 {
-		limit = DefaultLimit
+		limit = helper.DefaultLimit
 	}
-	if limit > MaxLimit {
-		limit = MaxLimit
+	if limit > helper.MaxLimit {
+		limit = helper.MaxLimit
 	}
 
 	offset := (page - 1) * limit

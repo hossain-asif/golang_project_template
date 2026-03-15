@@ -304,7 +304,7 @@ func (uc *UserController) GetUsersByOffsetPagination(w http.ResponseWriter, r *h
 	log := uc.userHandlerLog.WithContext(r.Context()).Method("GetUsersByOffsetPagination")
 
 	// Parse & validate pagination params
-	paginationParams := offset_pagination.Parse(r)
+	paginationParams := offset_pagination.ParseParams(r)
 
 	// Extract any additional filters
 	// _ := r.URL.Query().Get("name")

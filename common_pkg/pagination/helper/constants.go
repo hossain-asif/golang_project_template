@@ -1,4 +1,4 @@
-package offset_pagination
+package helper
 
 const (
 	DefaultPage  = 1

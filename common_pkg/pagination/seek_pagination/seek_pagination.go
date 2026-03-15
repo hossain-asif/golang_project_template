@@ -61,7 +61,8 @@ func (c *Cursor) EncodeCursor() (string, error) {
 	if err != nil {
 		return "", errors.New("failed to encode cursor")
 	}
-	return base64.URLEncoding.EncodeToString(b), nil
+	// return base64.URLEncoding.EncodeToString(b), nil // base64.URLEncoding which produces padding characters (=). When put in a URL query string these must be percent-encoded as %3D. If the client passes the raw token without encoding it, decoding silently fails
+	return base64.RawURLEncoding.EncodeToString(b), nil // base64.RawURLEncoding omits padding, so the token is URL-safe without further encoding
 }
 
 // DecodeCursor decodes an opaque cursor token
@@ -69,7 +70,7 @@ func DecodeCursor(token string) (*Cursor, error) {
 	if token == "" {
 		return nil, nil
 	}
-	b, err := base64.URLEncoding.DecodeString(token)
+	b, err := base64.RawURLEncoding.DecodeString(token) 
 	if err != nil {
 		return nil, errors.New("invalid cursor: bad encoding")
 	}
