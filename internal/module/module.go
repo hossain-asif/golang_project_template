@@ -8,8 +8,16 @@ import (
 	"gorm.io/gorm"
 )
 
+type Dependency struct {
+	DB *gorm.DB
+	FS *storage.FileStore
+
+	// add new infra here only
+	// Redis *redis.Client
+}
+
 type Module interface {
-	InitDependency(db *gorm.DB, fs *storage.FileStore) error
+	InitDependency(dependency Dependency) error
 	RegisterRoutes(r chi.Router)
 	RegisterTasks() []scheduler.Task
 }

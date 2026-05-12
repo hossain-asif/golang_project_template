@@ -7,6 +7,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type LoggerWrapper struct {
+	Logger *logrus.Logger
+}
+
 type ScopeLogger struct {
 	layer     string
 	module    string
@@ -60,21 +64,14 @@ func (s *ScopeLogger) fields() logrus.Fields {
 	return fields
 }
 
-// func (s *ScopeLogger) Method(method string) *logrus.Entry {
-
-// 	f := s.fields()
-// 	f["method"] = method
-// 	return Log.Logger.WithFields(f)
-// }
-
 func (s *ScopeLogger) Method(method string) *ScopeLogger {
-    return &ScopeLogger{
-        layer:     s.layer,
-        module:    s.module,
-        component: s.component,
-        method:    method,
-        ctx:       s.ctx,
-    }
+	return &ScopeLogger{
+		layer:     s.layer,
+		module:    s.module,
+		component: s.component,
+		method:    method,
+		ctx:       s.ctx,
+	}
 }
 
 func (s *ScopeLogger) Info(msg string) {
@@ -136,4 +133,15 @@ func (s *ScopeLogger) WithField(key string, value interface{}) *logrus.Entry {
 
 func (s *ScopeLogger) WithError(err error) *logrus.Entry {
 	return Log.Logger.WithFields(s.fields()).WithError(err)
+}
+
+
+
+// gorm logger adapter to use our ScopeLogger with gorm's logging interface
+type GormLogWriter struct {
+	Logger *ScopeLogger // or whatever your logger type is
+}
+
+func (w GormLogWriter) Printf(format string, args ...interface{}) {
+	w.Logger.Infof(format, args...)
 }

@@ -50,7 +50,6 @@ func NewUserService(_userRepository repositories.UserRepository) UserService {
 
 func (us *UserServiceImpl) CreateUser(ctx context.Context, user *models.User) (string, error) {
 	log := us.userServiceLog.Method("CreateUser").WithContext(ctx)
-	log.Info("Creating user in user service.")
 
 	password, hashErr := authentication.HashPassword(user.Password)
 	if hashErr != nil {
@@ -65,13 +64,11 @@ func (us *UserServiceImpl) CreateUser(ctx context.Context, user *models.User) (s
 		return "", err
 	}
 
-	log.Info("User created successfully from service.")
 	return message, nil
 }
 
 func (us *UserServiceImpl) LoginUser(ctx context.Context, loginPayload *dto.LoginUserRequest) (string, error) {
 	log := us.userServiceLog.Method("LoginUser").WithContext(ctx)
-	log.Info("Logging in user in user service.")
 
 	user, err := us.userRepository.GetByEmail(ctx, loginPayload.Email)
 	if err != nil {
@@ -94,13 +91,12 @@ func (us *UserServiceImpl) LoginUser(ctx context.Context, loginPayload *dto.Logi
 		log.Errorf("Error signing JWT token: %v\n", tokenErr)
 		return "", tokenErr
 	}
-	log.Info("Login successful from service.")
+
 	return tokenString, nil
 }
 
 func (us *UserServiceImpl) GetUserById(ctx context.Context, id string) (*models.User, error) {
 	log := us.userServiceLog.Method("GetUserById").WithContext(ctx)
-	log.Infof("Get user by id start.")
 
 	user, err := us.userRepository.GetByID(ctx, id)
 	if err != nil {
@@ -108,13 +104,11 @@ func (us *UserServiceImpl) GetUserById(ctx context.Context, id string) (*models.
 		return nil, err
 	}
 
-	log.Infof("Get user by id from service.")
 	return user, nil
 }
 
 func (us *UserServiceImpl) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 	log := us.userServiceLog.Method("GetAllUsers").WithContext(ctx)
-	log.Infof("Get all users start.")
 
 	users, err := us.userRepository.GetAll(ctx)
 	if err != nil {
@@ -122,7 +116,6 @@ func (us *UserServiceImpl) GetAllUsers(ctx context.Context) ([]*models.User, err
 		return nil, err
 	}
 
-	log.Infof("Get all users from service.")
 	return users, nil
 }
 
@@ -173,7 +166,6 @@ func (us *UserServiceImpl) CountUsersNewSince(ctx context.Context, since time.Ti
 
 func (us *UserServiceImpl) UpdateUser(ctx context.Context, id string, updatePayload *dto.UpdateUserRequest) (string, error) {
 	log := us.userServiceLog.Method("UpdateUser").WithContext(ctx)
-	log.Infof("Update user start.")
 
 	message, err := us.userRepository.Update(ctx, id, updatePayload)
 	if err != nil {
@@ -181,13 +173,11 @@ func (us *UserServiceImpl) UpdateUser(ctx context.Context, id string, updatePayl
 		return "", err
 	}
 
-	log.Infof("Update user from service.")
 	return message, nil
 }
 
 func (us *UserServiceImpl) DeleteUser(ctx context.Context, id string) (string, error) {
 	log := us.userServiceLog.Method("DeleteUser").WithContext(ctx)
-	log.Infof("Delete user start.")
 
 	message, err := us.userRepository.SoftDelete(ctx, id)
 	if err != nil {
@@ -195,13 +185,11 @@ func (us *UserServiceImpl) DeleteUser(ctx context.Context, id string) (string, e
 		return "", err
 	}
 
-	log.Infof("Delete user from service.")
 	return message, nil
 }
 
 func (us *UserServiceImpl) PermanentlyDeleteUser(ctx context.Context, id string) (string, error) {
 	log := us.userServiceLog.Method("PermanentlyDeleteUser").WithContext(ctx)
-	log.Infof("Permanently delete user start.")
 
 	message, err := us.userRepository.HardDelete(ctx, id)
 	if err != nil {
@@ -209,13 +197,11 @@ func (us *UserServiceImpl) PermanentlyDeleteUser(ctx context.Context, id string)
 		return "", err
 	}
 
-	log.Infof("Permanently delete user from service.")
 	return message, nil
 }
 
 func (us *UserServiceImpl) CreateUserViaTnx(ctx context.Context, users [][]string) (string, error) {
 	log := us.userServiceLog.Method("CreateUserViaTnx").WithContext(ctx)
-	log.Info("Creating user in user service.")
 
 	var messages [][]string
 
@@ -240,7 +226,6 @@ func (us *UserServiceImpl) CreateUserViaTnx(ctx context.Context, users [][]strin
 		}
 		messages = append(messages, []string{message})
 	}
-
-	log.Info("User created via tnx successfully from service.")
+	
 	return fmt.Sprintf("CSV uploaded successfully. messages: %s\n", messages), nil
 }

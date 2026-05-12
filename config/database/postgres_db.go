@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"go_project_structure/common_pkg/logger"
 	env "go_project_structure/config/env"
+	"os"
+	"time"
+	l "log"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 // Package-scoped logger — defined once, reused across all methods.
@@ -29,9 +33,9 @@ func loadPostgresConfig() postgresConfig {
 	return postgresConfig{
 		Host:     env.GetString("DB_HOST", "127.0.0.1"),
 		Port:     env.GetString("DB_PORT", "5432"),
-		User:     env.GetString("DB_USER", "postgres"),
-		Password: env.GetString("DB_PASSWORD", ""),
-		DBName:   env.GetString("DB_NAME", "app_dev"),
+		User:     env.GetString("DB_USER", "user"),
+		Password: env.GetString("DB_PASSWORD", "12345"),
+		DBName:   env.GetString("DB_NAME", "mydb"),
 		SSLMode:  env.GetString("DB_SSLMODE", "disable"),
 		TimeZone: env.GetString("DB_TIMEZONE", "UTC"),
 	}
@@ -50,9 +54,23 @@ func (c postgresConfig) dsn() string {
 func SetupDB() (*gorm.DB, error) {
 	log := pglog.Method("SetupDB")
 
+	// GORM logger
+	newLogger := gormlogger.New(
+		// logger.GormLogWriter{Logger: log},
+		l.New(os.Stdout, "\r\n", l.LstdFlags),
+		gormlogger.Config{
+			SlowThreshold:             time.Second,
+			LogLevel:                  gormlogger.Info,
+			IgnoreRecordNotFoundError: true,
+			Colorful:                  false,
+		},
+	)
+
 	cfg := loadPostgresConfig()
 
-	db, err := gorm.Open(postgres.Open(cfg.dsn()), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(cfg.dsn()), &gorm.Config{
+		Logger: newLogger,
+	})
 	if err != nil {
 		log.WithError(err).Error("Failed to open database connection.")
 		return nil, fmt.Errorf("open db: %w", err)

@@ -52,7 +52,6 @@ func NewUserRepository(_db *gorm.DB) UserRepository {
 
 func (u *UserRepositoryImpl) Create(ctx context.Context, user *models.User) (string, error) {
 	log := u.userRepositoryLog.Method("Create").WithContext(ctx)
-	log.Info("Creating user in user repository.")
 
 	// step 1: prepare the query
 	query := "INSERT INTO users (name, email, password) VALUES (?, ?, ?)"
@@ -79,13 +78,11 @@ func (u *UserRepositoryImpl) Create(ctx context.Context, user *models.User) (str
 	}
 
 	// step 5: return the result
-	log.Infof("Created user (rows affected: %d)\n", rowsAffected)
 	return fmt.Sprintf("Created user (rows affected: %d)\n", rowsAffected), nil
 }
 
 func (u *UserRepositoryImpl) GetByID(ctx context.Context, id string) (*models.User, error) {
 	log := u.userRepositoryLog.WithContext(ctx).Method("GetByID")
-	log.Infof("Fetching user by id in user repository.")
 
 	// step 1: prepare the query
 	query := "SELECT id, name, email, created_at, updated_at FROM users WHERE deleted_at IS NULL AND id = ?"
@@ -106,13 +103,11 @@ func (u *UserRepositoryImpl) GetByID(ctx context.Context, id string) (*models.Us
 	}
 
 	// step 4: return the result
-	log.Infof("Fetched user Successfully from repository.")
 	return user, nil
 }
 
 func (u *UserRepositoryImpl) GetAll(ctx context.Context) ([]*models.User, error) {
 	log := u.userRepositoryLog.WithContext(ctx).Method("GetAll")
-	log.Infof("Fetching all users in user repository.")
 
 	// step 1: prepare the query
 	query := "SELECT id, name, email, created_at, updated_at FROM users WHERE deleted_at IS NULL"
@@ -150,13 +145,11 @@ func (u *UserRepositoryImpl) GetAll(ctx context.Context) ([]*models.User, error)
 	}
 
 	// step 5: return the result
-	log.Infof("Fetched users successfully from repository.")
 	return users, nil
 }
 
 func (u *UserRepositoryImpl) Update(ctx context.Context, id string, updatePayload *dto.UpdateUserRequest) (string, error) {
 	log := u.userRepositoryLog.WithContext(ctx).Method("Update")
-	log.Infof("Updating user in user repository.")
 
 	// step 1: prepare the query
 	query := "UPDATE users SET "
@@ -190,13 +183,11 @@ func (u *UserRepositoryImpl) Update(ctx context.Context, id string, updatePayloa
 	}
 
 	// step 5: return the result
-	log.Infof("User updated successfully (rows affected: %d)", rowsAffected)
 	return fmt.Sprintf("User updated successfully (rows affected: %d)", rowsAffected), nil
 }
 
 func (u *UserRepositoryImpl) SoftDelete(ctx context.Context, id string) (string, error) {
 	log := u.userRepositoryLog.WithContext(ctx).Method("SoftDelete")
-	log.Infof("Deleting user in user repository.")
 
 	// step 1: prepare the query
 	query := "UPDATE users SET deleted_at = NOW() WHERE deleted_at IS NULL AND id = ?"
@@ -218,13 +209,11 @@ func (u *UserRepositoryImpl) SoftDelete(ctx context.Context, id string) (string,
 	}
 
 	// step 5: return the result
-	log.Infof("Deleted user (rows affected: %d)\n", rowsAffected)
 	return fmt.Sprintf("Deleted user (rows affected: %d)\n", rowsAffected), nil
 }
 
 func (u *UserRepositoryImpl) HardDelete(ctx context.Context, id string) (string, error) {
 	log := u.userRepositoryLog.WithContext(ctx).Method("HardDelete")
-	log.Infof("Hard deleting user in user repository.")
 
 	// step 1: prepare the query
 	query := "DELETE FROM users WHERE id = ?"
@@ -246,13 +235,11 @@ func (u *UserRepositoryImpl) HardDelete(ctx context.Context, id string) (string,
 	}
 
 	// step 5: return the result
-	log.Infof("Deleted user (rows affected: %d)\n", rowsAffected)
 	return fmt.Sprintf("Deleted user (rows affected: %d)\n", rowsAffected), nil
 }
 
 func (u *UserRepositoryImpl) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	log := u.userRepositoryLog.Method("GetByEmail").WithContext(ctx)
-	log.Info("Fetching user by email in user repository.")
 
 	// step 1: prepare the query
 	query := "SELECT name, email, password FROM users WHERE deleted_at IS NULL AND email = ?"
@@ -273,13 +260,11 @@ func (u *UserRepositoryImpl) GetByEmail(ctx context.Context, email string) (*mod
 	}
 
 	// step 4: return the result
-	log.Infof("Fetched user: %+v\n", user)
 	return user, nil
 }
 
 func (u *UserRepositoryImpl) InsertViaTnx(ctx context.Context, user *models.User) (string, error) {
 	log := u.userRepositoryLog.Method("InsertViaTnx").WithContext(ctx)
-	log.Info("Creating user in user repository.")
 
 	// step 0: begin transaction
 	tx := u.db.Begin()
@@ -321,13 +306,11 @@ func (u *UserRepositoryImpl) InsertViaTnx(ctx context.Context, user *models.User
 	}
 
 	// step 6: return the result
-	log.Infof("Created user (rows affected: %d)\n", rowsAffected)
 	return fmt.Sprintf("Created user (rows affected: %d)\n", rowsAffected), nil
 }
 
 func (u *UserRepositoryImpl) InsertViaTnxUsingBatchProcessing(ctx context.Context, users []*models.User) (string, error) {
 	log := u.userRepositoryLog.Method("InsertViaTnxUsingBatchProcessing").WithContext(ctx)
-	log.Info("Creating user in user repository.")
 
 	// step 0: begin transaction
 	tx := u.db.Begin()
@@ -374,7 +357,6 @@ func (u *UserRepositoryImpl) InsertViaTnxUsingBatchProcessing(ctx context.Contex
 	}
 
 	// step 6: return the result
-	log.Infof("Created user (rows affected: %d)\n", rowsAffected)
 	return fmt.Sprintf("Created user (rows affected: %d)\n", rowsAffected), nil
 
 	/*

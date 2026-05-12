@@ -25,7 +25,6 @@ func UserRegisterRequestValidator(next http.Handler) http.Handler {
 			json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json encoding error.", payloadErr)
 			return
 		}
-		log.Infof("user signup payload received.")
 
 		// validate the payload
 		if err := RequestPayload.Validate(); err != nil {
@@ -33,13 +32,11 @@ func UserRegisterRequestValidator(next http.Handler) http.Handler {
 			json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Validation failed", err)
 			return
 		}
-		log.Infof("user signup payload validated.")
 
 		// context can be used to pass the validated payload to the handler for further processing
 		req_context := r.Context()                                                          // parent context -> get the context from the request
 		ctx := context.WithValue(req_context, enums.CtxRegistrationPayload, RequestPayload) // create a new context with the validated payload
 		r = r.WithContext(ctx)                                                              // create a new request with the new context
-		log.Infof("user signup context setup.")
 
 		next.ServeHTTP(w, r)
 	})
@@ -56,7 +53,6 @@ func UserUpdateRequestValidator(next http.Handler) http.Handler {
 			json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json encoding error.", payloadErr)
 			return
 		}
-		log.Infof("user update payload received.")
 
 		// validate the payload
 		if err := RequestPayload.Validate(); err != nil {
@@ -64,12 +60,10 @@ func UserUpdateRequestValidator(next http.Handler) http.Handler {
 			json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Validation failed", err)
 			return
 		}
-		log.Infof("user update payload validated.")
 
 		req_context := r.Context()                                                    // parent context -> get the context from the request
 		ctx := context.WithValue(req_context, enums.CtxUpdatePayload, RequestPayload) // create a new context with the validated payload
 		r = r.WithContext(ctx)
-		log.Infof("user update context setup.")
 
 		next.ServeHTTP(w, r)
 	})
@@ -86,7 +80,6 @@ func UserLoginRequestValidator(next http.Handler) http.Handler {
 			json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json encoding error.", payloadErr)
 			return
 		}
-		log.Infof("user login payload received.")
 
 		// validate the payload
 		if err := RequestPayload.Validate(); err != nil {
@@ -94,12 +87,10 @@ func UserLoginRequestValidator(next http.Handler) http.Handler {
 			json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Validation failed", err)
 			return
 		}
-		log.Infof("user login payload validated.")
 
-		req_context := r.Context()                                                    // parent context -> get the context from the request
+		req_context := r.Context()                                                   // parent context -> get the context from the request
 		ctx := context.WithValue(req_context, enums.CtxLoginPayload, RequestPayload) // create a new context with the validated payload
 		r = r.WithContext(ctx)
-		log.Infof("user login context setup.")
 
 		next.ServeHTTP(w, r)
 	})

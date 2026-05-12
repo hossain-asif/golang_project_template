@@ -6,11 +6,11 @@ import (
 	"go_project_structure/common_pkg/scheduler"
 	"go_project_structure/common_pkg/storage"
 	repositories "go_project_structure/internal/infrastructure/repositories/user"
+	"go_project_structure/internal/module"
 	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"gorm.io/gorm"
 )
 
 type UserModule struct {
@@ -23,16 +23,16 @@ type UserModule struct {
 // Init wires all user dependencies.
 // Safe to call multiple times — only executes once due to sync.Once.
 // Returns an error if called with a nil db.
-func (m *UserModule) InitDependency(db *gorm.DB, fs *storage.FileStore) error {
+func (m *UserModule) InitDependency(dependency module.Dependency) error {
 	var initErr error
 
 	m.once.Do(func() {
-		if db == nil {
+		if dependency.DB == nil {
 			initErr = fmt.Errorf("user module: Init called with nil db")
 			return
 		}
-		m.fs = fs
-		m.repo = repositories.NewUserRepository(db)
+		m.fs = dependency.FS
+		m.repo = repositories.NewUserRepository(dependency.DB)
 		m.svc = NewUserService(m.repo)
 	})
 	return initErr
@@ -45,7 +45,6 @@ func (m *UserModule) RegisterRoutes(r chi.Router) {
 	uc := NewUserController(m.svc, m.fs)
 	NewUserRouter(uc).Register(r)
 }
-
 
 func (m *UserModule) RegisterTasks() []scheduler.Task {
 	if m.svc == nil || m.repo == nil {

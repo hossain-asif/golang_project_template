@@ -6,12 +6,12 @@ import (
 	"go_project_structure/common_pkg/scheduler"
 	"go_project_structure/common_pkg/storage"
 	config "go_project_structure/config/env"
-	"go_project_structure/internal/router"
+	"go_project_structure/internal/module"
 	"os/signal"
 	"syscall"
 )
 
-// global decalaration
+// global declaration
 // better to keep the log name as similar to file name
 var appLog = logger.Log.Scope("", "app", "application")
 
@@ -20,7 +20,7 @@ type Config struct {
 	Addr string // PORT
 }
 
-// constructor for Config
+// NewConfig builds a Config from environment variables.
 func NewConfig() Config {
 	port := config.GetString("PORT", ":8080")
 	return Config{
@@ -28,54 +28,68 @@ func NewConfig() Config {
 	}
 }
 
+// Application is the top-level wiring object.
+// Modules is the ordered list of domain modules supplied by the composition root (main.go).
 type Application struct {
-	Config Config
+	Config  Config
+	Modules []module.Module
 }
 
-// constructor for Application
-func NewApplication(config Config) Application {
+// NewApplication constructs an Application with its config and module list.
+func NewApplication(cfg Config, modules []module.Module) Application {
 	return Application{
-		Config: config,
+		Config:  cfg,
+		Modules: modules,
 	}
 }
 
+// Run initialises all infrastructure, bootstraps modules, and starts the HTTP
+// server. It blocks until a SIGINT/SIGTERM signal is received.
 func (app *Application) Run() error {
-	// shutdown server on SIGINT/SIGTERM
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	// logger setup
 	logger.InitLogger()
 
-	// Connect MongoDB as a logrus hook
+	// Connect MongoDB as a logrus hook (uncomment when needed)
 	// mongoHook, err := setupMongoHook()
 	// if err != nil {
 	// 	return err
 	// }
 	// defer mongoHook.Disconnect()
 
-	// Init file store
-	fs, err := SetupFileStore()
+	dep, cleanup, err := app.setupInfrastructure()
 	if err != nil {
 		return err
 	}
-	defer fs.Close()
-	storage.SetDefault(fs)
+	defer cleanup()
 
-	// Init database
-	db, err := SetupDB()
-	if err != nil {
-		return err
-	}
-
-	// Bootstrap modules → build root router + collect tasks
-	rootRouter, allTasks, err := BootstrapModules(router.Modules, db, fs)
+	rootRouter, allTasks, err := BootstrapModules(app.Modules, dep)
 	if err != nil {
 		return err
 	}
 
-	// Start background task scheduler
 	go scheduler.TaskAssignment(ctx, allTasks)
 
 	return app.RunServer(ctx, rootRouter)
+}
+
+// setupInfrastructure initialises shared infra (file store, database) and
+// returns a populated Dependency bundle together with a cleanup function.
+func (app *Application) setupInfrastructure() (module.Dependency, func(), error) {
+	fs, err := SetupFileStore()
+	if err != nil {
+		return module.Dependency{}, nil, err
+	}
+	storage.SetDefault(fs)
+
+	db, err := SetupDB()
+	if err != nil {
+		fs.Close()
+		return module.Dependency{}, nil, err
+	}
+
+	dep := module.Dependency{DB: db, FS: fs}
+	cleanup := func() { fs.Close() }
+	return dep, cleanup, nil
 }

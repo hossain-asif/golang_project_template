@@ -1,7 +1,7 @@
 
 MIGRATION_FOLDER=db/migrations
-# DB_URL="host=127.0.0.1 user=minhaz_hossain password=12345 dbname=auth_dev port=5432 sslmode=disable TimeZone=UTC"
-DB_URL="postgresql://minhaz_hossain:12345@127.0.0.1:5432/auth_dev?sslmode=disable&timezone=UTC"
+# DB_URL="host=127.0.0.1 user=user password=12345 dbname=mydb port=5432 sslmode=disable TimeZone=UTC"
+DB_URL="postgresql://user:12345@127.0.0.1:5432/mydb?sslmode=disable&timezone=UTC"
 
 # create a new migration 
 migrate-create:  # command: gmake migrate-create name="create_entity_table"
