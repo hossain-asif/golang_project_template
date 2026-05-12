@@ -9,8 +9,8 @@ import (
 	"go_project_structure/common_pkg/pagination/seek_pagination"
 	env "go_project_structure/config/env"
 	"go_project_structure/internal/dto"
-	"go_project_structure/internal/infrastructure/models"
-	repositories "go_project_structure/internal/infrastructure/repositories/user"
+	"go_project_structure/internal/database/models"
+	repositories "go_project_structure/internal/database/repositories/user"
 	"go_project_structure/utils/authentication"
 	"time"
 
@@ -226,6 +226,6 @@ func (us *UserServiceImpl) CreateUserViaTnx(ctx context.Context, users [][]strin
 		}
 		messages = append(messages, []string{message})
 	}
-	
+
 	return fmt.Sprintf("CSV uploaded successfully. messages: %s\n", messages), nil
 }

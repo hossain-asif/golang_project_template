@@ -4,7 +4,7 @@ import (
 	"context"
 	common_csv "go_project_structure/common_pkg/csv"
 	"go_project_structure/internal/dto"
-	"go_project_structure/internal/infrastructure/models"
+	"go_project_structure/internal/database/models"
 	"go_project_structure/utils/authentication"
 )
 

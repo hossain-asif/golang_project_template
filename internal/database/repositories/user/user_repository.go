@@ -8,7 +8,7 @@ import (
 	"go_project_structure/common_pkg/pagination/offset_pagination"
 	"go_project_structure/common_pkg/pagination/seek_pagination"
 	"go_project_structure/internal/dto"
-	"go_project_structure/internal/infrastructure/models"
+	"go_project_structure/internal/database/models"
 	"go_project_structure/utils/pg"
 	"strings"
 	"time"
@@ -58,6 +58,7 @@ func (u *UserRepositoryImpl) Create(ctx context.Context, user *models.User) (str
 
 	// step 2: execute the query
 	result := u.db.Exec(query, user.Name, user.Email, user.Password)
+	u.db.Debug()
 
 	// step 3: check for errors
 	if result.Error != nil {

@@ -1,7 +1,7 @@
 package user
 
 import (
-	"go_project_structure/internal/infrastructure/models"
+	"go_project_structure/internal/database/models"
 	"sync"
 	"time"
 )

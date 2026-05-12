@@ -7,7 +7,7 @@ import (
 	"go_project_structure/common_pkg/pagination/helper"
 	"go_project_structure/common_pkg/pagination/offset_pagination"
 	"go_project_structure/common_pkg/pagination/seek_pagination"
-	"go_project_structure/internal/infrastructure/models"
+	"go_project_structure/internal/database/models"
 	"time"
 )
 
