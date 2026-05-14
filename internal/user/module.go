@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"go_project_structure/common_pkg/scheduler"
 	"go_project_structure/common_pkg/storage"
-	repositories "go_project_structure/internal/database/repositories/user"
+	repositories "go_project_structure/internal/db/repositories/user"
 	"go_project_structure/internal/module"
 	"sync"
 	"time"

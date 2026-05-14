@@ -8,9 +8,9 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// bootstrapModules runs the full Init → RegisterRoutes → RegisterTasks
+// dependencyInit runs the full Init → RegisterRoutes → RegisterTasks
 // lifecycle on every module, then returns the assembled router and task list.
-func BootstrapModules(modules []module.Module, dependency module.Dependency) (*chi.Mux, []scheduler.Task, error) {
+func dependencyInit(modules []module.Module, dependency module.Dependency) (*chi.Mux, []scheduler.Task, error) {
 
 	rootRouter := chi.NewRouter()
 	var allTasks []scheduler.Task
@@ -18,7 +18,7 @@ func BootstrapModules(modules []module.Module, dependency module.Dependency) (*c
 	for _, m := range modules {
 		// Step 1 — wire dependencies
 		if err := m.InitDependency(dependency); err != nil {
-			appLog.Method("bootstrapModules").WithError(err).
+			appLog.Method("dependencyInit").WithError(err).
 				Errorf("Module InitDependency failed: %T", m)
 			return nil, nil, fmt.Errorf("module init (%T): %w", m, err)
 		}

@@ -10,7 +10,7 @@ import (
 	"go_project_structure/common_pkg/pagination/seek_pagination"
 	"go_project_structure/common_pkg/storage"
 	"go_project_structure/internal/dto"
-	"go_project_structure/internal/database/models"
+	"go_project_structure/internal/db/models"
 	enums "go_project_structure/utils/enums"
 	"net/http"
 	"os"

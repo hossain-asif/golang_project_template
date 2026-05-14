@@ -12,7 +12,6 @@ import (
 )
 
 // global declaration
-// better to keep the log name as similar to file name
 var appLog = logger.Log.Scope("", "app", "application")
 
 // Config holds the configuration for the server.
@@ -64,7 +63,7 @@ func (app *Application) Run() error {
 	}
 	defer cleanup()
 
-	rootRouter, allTasks, err := BootstrapModules(app.Modules, dep)
+	rootRouter, allTasks, err := dependencyInit(app.Modules, dep)
 	if err != nil {
 		return err
 	}
