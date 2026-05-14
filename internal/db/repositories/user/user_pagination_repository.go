@@ -20,7 +20,7 @@ type PaginationRepository interface {
 
 // offset based pagination
 func (u *UserRepositoryImpl) ListUsersOffsetPagination(ctx context.Context, p offset_pagination.Params) ([]*models.User, int64, error) {
-	log := u.userRepositoryLog.WithContext(ctx).Method("GetAllByOffsetPagination")
+	log := u.userRepositoryLog.Method("GetAllByOffsetPagination").WithContext(ctx)
 
 	// step 1: prepare the query
 	query := "SELECT id, name, email, created_at, updated_at FROM users"
@@ -65,7 +65,7 @@ func (u *UserRepositoryImpl) ListUsersOffsetPagination(ctx context.Context, p of
 
 // cursor based pagination
 func (u *UserRepositoryImpl) ListUsersCursorPagination(ctx context.Context, p cursor_pagination.Params) ([]*models.User, error) {
-	log := u.userRepositoryLog.WithContext(ctx).Method("ListUsersCursorPagination")
+	log := u.userRepositoryLog.Method("ListUsersCursorPagination").WithContext(ctx)
 
 	// step 1: prepare the query
 	query := "SELECT id, name, email, created_at, updated_at FROM users"
@@ -134,18 +134,17 @@ func (u *UserRepositoryImpl) CountUsersNewSince(ctx context.Context, since time.
 
 // seek based pagination helpers
 func (u *UserRepositoryImpl) seekFirstPage(ctx context.Context, limit int) (seek_pagination.RailResult[models.User], error) {
-	log := u.userRepositoryLog.WithContext(ctx).Method("seekFirstPage")
+	log := u.userRepositoryLog.Method("seekFirstPage").WithContext(ctx)
 
 	// step 1: prepare the query
-	query := fmt.Sprintf(`
+	const query = `
 		SELECT id, created_at, updated_at, deleted_at, name, email, password
 		FROM   users
 		WHERE  deleted_at IS NULL
 		ORDER  BY created_at DESC, id DESC
-		LIMIT  ?`)
+		LIMIT  ?`
 
-	args := []interface{}{}
-	args = append(args, limit+1)
+	args := []interface{}{limit + 1}
 
 	// step 2: execute the query
 	var users []models.User
@@ -237,7 +236,7 @@ func (u *UserRepositoryImpl) seekPrevPage(ctx context.Context, c *seek_paginatio
 }
 
 func (u *UserRepositoryImpl) seekFetchNewRail(ctx context.Context, c *seek_pagination.Cursor, limit int) ([]models.User, bool, error) {
-	log := u.userRepositoryLog.WithContext(ctx).Method("seekFetchNewRail")
+	log := u.userRepositoryLog.Method("seekFetchNewRail").WithContext(ctx)
 
 	query := fmt.Sprintf(`
 			SELECT id, created_at, updated_at, deleted_at, name, email, password
@@ -268,7 +267,7 @@ func (u *UserRepositoryImpl) seekFetchNewRail(ctx context.Context, c *seek_pagin
 }
 
 func (u *UserRepositoryImpl) seekFetchHistoryRail(ctx context.Context, c *seek_pagination.Cursor, limit int) ([]models.User, bool, error) {
-	log := u.userRepositoryLog.WithContext(ctx).Method("seekFetchHistoryRail")
+	log := u.userRepositoryLog.Method("seekFetchHistoryRail").WithContext(ctx)
 
 	query := fmt.Sprintf(`
 		SELECT id, created_at, updated_at, deleted_at, name, email, password

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"go_project_structure/common_pkg/logger"
 	env "go_project_structure/config/env"
+	"os"
 	"time"
+	goLog "log"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -53,12 +55,12 @@ func SetupDB() (*gorm.DB, error) {
 	log := pglog.Method("SetupDB")
 
 	// GORM logger
-	gormLog := logger.Log.Scope("repository", "gorm", "query")
+	// gormLog := logger.Log.Scope("repository", "gorm", "query")
 	newLogger := gormlogger.New(
-		logger.GormLogWriter{Logger: gormLog},
-		// l.New(os.Stdout, "\r\n", l.LstdFlags),
+		// logger.GormLogWriter{Logger: gormLog},
+		goLog.New(os.Stdout, "\r\n", goLog.LstdFlags),
 		gormlogger.Config{
-			SlowThreshold:             time.Second,
+			SlowThreshold:             200 * time.Millisecond,
 			LogLevel:                  gormlogger.Info,
 			IgnoreRecordNotFoundError: true,
 			Colorful:                  false,

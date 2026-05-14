@@ -33,13 +33,13 @@ type UserRepository interface {
 type UserRepositoryImpl struct {
 	// Add fields for database connection, etc.
 	db                *gorm.DB
-	userRepositoryLog *logger.ScopeLogger
+	userRepositoryLog *logger.GormLogWriter
 }
 
 func NewUserRepository(_db *gorm.DB) UserRepository {
 	return &UserRepositoryImpl{
 		db:                _db,
-		userRepositoryLog: logger.Log.Scope("db", "repositories", "user_repository"),
+		userRepositoryLog: &logger.GormLogWriter{Logger: logger.Log.Scope("repository", "gorm", "user_repository")},
 	}
 }
 
@@ -76,13 +76,14 @@ func (u *UserRepositoryImpl) Create(ctx context.Context, user *models.User) (str
 }
 
 func (u *UserRepositoryImpl) GetByID(ctx context.Context, id string) (*models.User, error) {
-	log := u.userRepositoryLog.WithContext(ctx).Method("GetByID")
+	log := u.userRepositoryLog.Method("GetByID").WithContext(ctx)
 
 	// step 1: prepare the query
 	query := "SELECT id, name, email, created_at, updated_at FROM users WHERE deleted_at IS NULL AND id = ?"
 
 	// step 2: execute the query
 	row := u.db.Raw(query, id).Row()
+	
 
 	// step 3: process the result
 	user := &models.User{}
@@ -101,7 +102,7 @@ func (u *UserRepositoryImpl) GetByID(ctx context.Context, id string) (*models.Us
 }
 
 func (u *UserRepositoryImpl) GetAll(ctx context.Context) ([]*models.User, error) {
-	log := u.userRepositoryLog.WithContext(ctx).Method("GetAll")
+	log := u.userRepositoryLog.Method("GetAll").WithContext(ctx)
 
 	// step 1: prepare the query
 	query := "SELECT id, name, email, created_at, updated_at FROM users WHERE deleted_at IS NULL"
@@ -143,7 +144,7 @@ func (u *UserRepositoryImpl) GetAll(ctx context.Context) ([]*models.User, error)
 }
 
 func (u *UserRepositoryImpl) Update(ctx context.Context, id string, updatePayload *dto.UpdateUserRequest) (string, error) {
-	log := u.userRepositoryLog.WithContext(ctx).Method("Update")
+	log := u.userRepositoryLog.Method("Update").WithContext(ctx)
 
 	// step 1: prepare the query
 	query := "UPDATE users SET "
@@ -181,7 +182,7 @@ func (u *UserRepositoryImpl) Update(ctx context.Context, id string, updatePayloa
 }
 
 func (u *UserRepositoryImpl) SoftDelete(ctx context.Context, id string) (string, error) {
-	log := u.userRepositoryLog.WithContext(ctx).Method("SoftDelete")
+	log := u.userRepositoryLog.Method("SoftDelete").WithContext(ctx)
 
 	// step 1: prepare the query
 	query := "UPDATE users SET deleted_at = NOW() WHERE deleted_at IS NULL AND id = ?"
@@ -207,7 +208,7 @@ func (u *UserRepositoryImpl) SoftDelete(ctx context.Context, id string) (string,
 }
 
 func (u *UserRepositoryImpl) HardDelete(ctx context.Context, id string) (string, error) {
-	log := u.userRepositoryLog.WithContext(ctx).Method("HardDelete")
+	log := u.userRepositoryLog.Method("HardDelete").WithContext(ctx)
 
 	// step 1: prepare the query
 	query := "DELETE FROM users WHERE id = ?"

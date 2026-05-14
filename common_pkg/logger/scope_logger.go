@@ -142,6 +142,29 @@ type GormLogWriter struct {
 	Logger *ScopeLogger // or whatever your logger type is
 }
 
+func (s *GormLogWriter) Method(method string) *ScopeLogger {
+	return &ScopeLogger{
+		layer:     s.Logger.layer,
+		module:    s.Logger.module,
+		component: s.Logger.component,
+		method:    method,
+		ctx:       s.Logger.ctx,
+	}
+}
+
+
+func (w GormLogWriter) Info(context context.Context, msg string, args ...interface{}) {
+	w.Logger.WithContext(context).Infof(msg, args...)
+}
+
+func (w GormLogWriter) Warn(context context.Context, msg string, args ...interface{}) {
+	w.Logger.WithContext(context).Warnf(msg, args...)
+}
+
+func (w GormLogWriter) Error(context context.Context, msg string, args ...interface{}) {
+	w.Logger.WithContext(context).Errorf(msg, args...)
+}
+
 func (w GormLogWriter) Printf(format string, args ...interface{}) {
 	w.Logger.Infof(format, args...)
 }

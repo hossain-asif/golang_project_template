@@ -32,13 +32,6 @@ func AddHook(hook logrus.Hook) {
 	// add mongodb hook
 	Log.Logger.AddHook(hook)
 
-	// add method hook
-	// Log.Logger.AddHook(&MethodHook{})
 }
 
-type MethodHook struct{}
-
-func (m *MethodHook) Levels() []logrus.Level {
-	return logrus.AllLevels
-}
 
