@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -70,14 +71,14 @@ func NewLogConfig(cfg LogConfig) *logrus.Logger {
 	}
 
 	if cfg.LogFile != "" {
-		log.SetOutput(os.Stdout)
-		log.SetOutput(&lumberjack.Logger{
+		fileWriter := &lumberjack.Logger{
 			Filename:   logPath,
 			MaxSize:    20, // MB
 			MaxBackups: 5,
 			MaxAge:     30, // days
 			Compress:   true,
-		})
+		}
+		log.SetOutput(io.MultiWriter(os.Stdout, fileWriter))
 	} else {
 		// Recommended for Docker/K8s
 		log.SetOutput(os.Stdout)
