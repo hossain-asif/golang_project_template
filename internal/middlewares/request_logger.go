@@ -16,7 +16,9 @@ func RequestLoggerMiddleware(next http.Handler) http.Handler {
 	log := requestLoggerMiddlewareLogger.Method("RequestLoggerMiddleware")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		log.Infof("Request received at: %s at time: %s", r.URL.Path, time.Now())
+		start := time.Now()
+
+		log.Infof("Request received at: %s at time: %s", r.URL.Path, start)
 
 		var reqId uuid.UUID
 
@@ -35,5 +37,7 @@ func RequestLoggerMiddleware(next http.Handler) http.Handler {
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
+
+		log.Infof("[RESPONSE] id=%s path=%s duration=%s", reqId, r.URL.Path, time.Since(start))
 	})
 }

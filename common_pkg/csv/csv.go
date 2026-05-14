@@ -21,19 +21,16 @@ var csvLog = logger.Log.Scope("common_pkg", "csv", "csv")
 func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 	log := csvLog.Method("ExportToCSV")
 
-	// Convert the input data into a reflection value
-	// This allows us to inspect it at runtime
+	// Convert the input data into a reflection value. This allows us to inspect it at runtime
 	val := reflect.ValueOf(data)
 
-	// Ensure that the provided data is actually a slice
-	// Because CSV export expects multiple records
+	// Ensure that the provided data is actually a slice Because CSV export expects multiple records
 	if val.Kind() != reflect.Slice {
 		log.Errorf("data must be a slice")
 		return "", fmt.Errorf("data must be a slice")
 	}
 
-	// Prevent creating a CSV file if the slice is empty
-	// Because we cannot infer struct fields without at least one element
+	// Prevent creating a CSV file if the slice is empty. Because we cannot infer struct fields without at least one element
 	if val.Len() == 0 {
 		log.Errorf("empty slice")
 		return "", fmt.Errorf("empty slice")
@@ -59,8 +56,7 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 	// Ensure any buffered CSV data is written to file before exiting
 	defer writer.Flush()
 
-	// Get the type of the first element in the slice
-	// This is used to inspect struct fields (for header generation)
+	// Get the type of the first element in the slice. This is used to inspect struct fields (for header generation)
 	elemType := val.Index(0).Type()
 
 	// Stores column names for CSV header
@@ -76,8 +72,7 @@ func ExportToCSV(filePrefix string, data interface{}) (string, error) {
 		// Example: `csv:"email"` → returns "email"
 		tag := field.Tag.Get("csv")
 
-		// Only include fields that explicitly define a csv tag
-		// This allows selective exporting of fields
+		// Only include fields that explicitly define a csv tag. This allows selective exporting of fields
 		if tag != "" {
 			headers = append(headers, tag)
 		}
