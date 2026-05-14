@@ -11,6 +11,13 @@ import (
 	"time"
 )
 
+type PaginationRepository interface {
+	ListUsersOffsetPagination(ctx context.Context, p offset_pagination.Params) ([]*models.User, int64, error)
+	ListUsersCursorPagination(ctx context.Context, p cursor_pagination.Params) ([]*models.User, error)
+	ListUsersSeekPagination(ctx context.Context, params seek_pagination.Params) (seek_pagination.RailResult[models.User], error)
+	CountUsersNewSince(ctx context.Context, since time.Time, sinceID uint) (int64, error)
+}
+
 // offset based pagination
 func (u *UserRepositoryImpl) ListUsersOffsetPagination(ctx context.Context, p offset_pagination.Params) ([]*models.User, int64, error) {
 	log := u.userRepositoryLog.WithContext(ctx).Method("GetAllByOffsetPagination")

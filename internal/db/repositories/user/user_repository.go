@@ -4,14 +4,10 @@ import (
 	"context"
 	"fmt"
 	"go_project_structure/common_pkg/logger"
-	"go_project_structure/common_pkg/pagination/cursor_pagination"
-	"go_project_structure/common_pkg/pagination/offset_pagination"
-	"go_project_structure/common_pkg/pagination/seek_pagination"
-	"go_project_structure/internal/dto"
 	"go_project_structure/internal/db/models"
+	"go_project_structure/internal/dto"
 	"go_project_structure/utils/pg"
 	"strings"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -24,17 +20,14 @@ type UserRepository interface {
 	SoftDelete(ctx context.Context, id string) (string, error)
 	HardDelete(ctx context.Context, id string) (string, error)
 
-	// pagination
-	ListUsersOffsetPagination(ctx context.Context, p offset_pagination.Params) ([]*models.User, int64, error)
-	ListUsersCursorPagination(ctx context.Context, p cursor_pagination.Params) ([]*models.User, error)
-	ListUsersSeekPagination(ctx context.Context, params seek_pagination.Params) (seek_pagination.RailResult[models.User], error)
-	CountUsersNewSince(ctx context.Context, since time.Time, sinceID uint) (int64, error)
-
 	InsertViaTnx(ctx context.Context, user *models.User) (string, error)
 	InsertViaTnxUsingBatchProcessing(ctx context.Context, users []*models.User) (string, error)
 
 	// user specific methods
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
+
+	// pagination specific methods
+	PaginationRepository
 }
 
 type UserRepositoryImpl struct {
