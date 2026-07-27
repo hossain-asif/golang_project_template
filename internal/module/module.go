@@ -2,7 +2,6 @@ package module
 
 import (
 	"go_project_structure/common_pkg/scheduler"
-	"go_project_structure/common_pkg/storage"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
@@ -10,7 +9,6 @@ import (
 
 type Dependency struct {
 	DB *gorm.DB
-	FS *storage.FileStore
 
 	// add new infra here only
 	// Redis *redis.Client

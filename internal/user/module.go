@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"go_project_structure/common_pkg/scheduler"
-	"go_project_structure/common_pkg/storage"
 	repositories "go_project_structure/internal/db/repositories/user"
 	"go_project_structure/internal/module"
 	"sync"
@@ -16,7 +15,6 @@ import (
 type UserModule struct {
 	repo repositories.UserRepository
 	svc  UserService
-	fs   *storage.FileStore
 	once sync.Once
 }
 
@@ -31,7 +29,6 @@ func (m *UserModule) InitDependency(dependency module.Dependency) error {
 			initErr = fmt.Errorf("user module: Init called with nil db")
 			return
 		}
-		m.fs = dependency.FS
 		m.repo = repositories.NewUserRepository(dependency.DB)
 		m.svc = NewUserService(m.repo)
 	})
@@ -42,7 +39,7 @@ func (m *UserModule) RegisterRoutes(r chi.Router) {
 	if m.svc == nil || m.repo == nil {
 		panic("user module: RegisterRoutes called before Init")
 	}
-	uc := NewUserController(m.svc, m.fs)
+	uc := NewUserController(m.svc)
 	NewUserRouter(uc).Register(r)
 }
 
@@ -71,9 +68,6 @@ func (m *UserModule) RegisterTasks() []scheduler.Task {
 		{
 			Name:     "user.file-rebuild",
 			Interval: 59 * time.Minute,
-			Fn: func(ctx context.Context) error {
-				return m.fs.RebuildIfChecksumChanged()
-			},
 		},
 	}
 }

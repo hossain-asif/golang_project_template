@@ -8,9 +8,8 @@ import (
 	"go_project_structure/common_pkg/pagination/cursor_pagination"
 	"go_project_structure/common_pkg/pagination/offset_pagination"
 	"go_project_structure/common_pkg/pagination/seek_pagination"
-	"go_project_structure/common_pkg/storage"
-	"go_project_structure/internal/dto"
 	"go_project_structure/internal/db/models"
+	"go_project_structure/internal/dto"
 	enums "go_project_structure/utils/enums"
 	"net/http"
 	"os"
@@ -25,15 +24,13 @@ import (
 type UserController struct {
 	UserService    UserService
 	userHandlerLog *logger.ScopeLogger
-	fileStore      *storage.FileStore
 	cache          *UserListCache
 }
 
-func NewUserController(_userService UserService, fs *storage.FileStore) *UserController {
+func NewUserController(_userService UserService) *UserController {
 	return &UserController{
 		UserService:    _userService,
 		userHandlerLog: logger.Log.Scope("", "user", "user_handler"),
-		fileStore:      fs,
 		cache:          NewUserListCache(1 * time.Minute),
 	}
 }
@@ -149,10 +146,10 @@ func (uc *UserController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	/*
-	HTTP cache headers (browser / CDN layer on top)
-	public                 → browsers AND CDNs (Cloudflare, CloudFront) may cache
-	max-age=86400          → cached response is fresh for 24 hours
-	stale-while-revalidate → after 24h, serve stale instantly while refreshing in background
+		HTTP cache headers (browser / CDN layer on top)
+		public                 → browsers AND CDNs (Cloudflare, CloudFront) may cache
+		max-age=86400          → cached response is fresh for 24 hours
+		stale-while-revalidate → after 24h, serve stale instantly while refreshing in background
 	*/
 	w.Header().Set("Cache-Control", "public, max-age=60, stale-while-revalidate=30")
 
@@ -364,117 +361,4 @@ func (uc *UserController) GetUsersBySeekPagination(w http.ResponseWriter, r *htt
 	}
 
 	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get users by pagination end point", resp)
-}
-
-// file system
-func (uc *UserController) GetUserFromFile(w http.ResponseWriter, r *http.Request) {
-	log := uc.userHandlerLog.WithContext(r.Context()).Method("GetUserFromFile")
-
-	id := chi.URLParam(r, "id")
-
-	var user dto.UserFromTxt
-	bytes, err := uc.fileStore.GetRaw(id)
-	if err != nil {
-		log.Errorf("User fetch failed from text file. %v", err)
-		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User fetch failed from text file.", err)
-		return
-	}
-	err = user.UnmarshalJSON(bytes)
-	if err != nil {
-		log.Errorf("User unmarshal failed. %v", err)
-		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User unmarshal failed.", err)
-		return
-	}
-
-	json.WriteJsonSuccessResponse(w, http.StatusOK, "Get User From text File end point", user)
-}
-
-// add user to file
-func (uc *UserController) AddUserToFile(w http.ResponseWriter, r *http.Request) {
-	log := uc.userHandlerLog.WithContext(r.Context()).Method("AddUserToFile")
-
-	// decode request body INTO the struct first
-	var user dto.UserFromTxt
-	if payloadErr := json.ReadJsonBody(r, &user); payloadErr != nil {
-		log.Errorf("Json decoding error. %v", payloadErr)
-		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json decoding error.", payloadErr)
-		return
-	}
-
-	// check if user already exists
-	idStr := strconv.Itoa(user.ID)
-	existing, _ := uc.fileStore.GetRaw(idStr)
-	if existing != nil {
-		log.Errorf("User already exists. id: %d", user.ID)
-		json.WriteJsonErrorResponse(w, http.StatusConflict, "User already exists.", nil)
-		return
-	}
-
-	if err := uc.fileStore.AddRecord(user); err != nil {
-		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "Add user failed", err)
-		return
-	}
-
-	json.WriteJsonSuccessResponse(w, http.StatusCreated, "User added in text file", nil)
-}
-
-// UpdateUserInFile updates an existing user record in the file store.
-func (uc *UserController) UpdateUserInFile(w http.ResponseWriter, r *http.Request) {
-	log := uc.userHandlerLog.WithContext(r.Context()).Method("UpdateUserInFile")
-
-	id := chi.URLParam(r, "id")
-
-	// check if user exists before attempting update
-	existing, _ := uc.fileStore.GetRaw(id)
-	if existing == nil {
-		log.Errorf("User not found. id: %s", id)
-		json.WriteJsonErrorResponse(w, http.StatusNotFound, "User not found.", nil)
-		return
-	}
-
-	// decode request body into the struct
-	var user dto.UserFromTxt
-	if payloadErr := json.ReadJsonBody(r, &user); payloadErr != nil {
-		log.Errorf("Json decoding error. %v", payloadErr)
-		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json decoding error.", payloadErr)
-		return
-	}
-
-	// ensure the id in the URL matches the id in the body
-	if strconv.Itoa(user.ID) != id {
-		log.Errorf("Id mismatch. url id: %s, body id: %d", id, user.ID)
-		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Id in URL and body do not match.", nil)
-		return
-	}
-
-	if err := uc.fileStore.UpdateRecord(id, user); err != nil {
-		log.Errorf("User update failed in text file. %v", err)
-		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User update failed in text file.", err)
-		return
-	}
-
-	json.WriteJsonSuccessResponse(w, http.StatusOK, "User updated in text file", nil)
-}
-
-// DeleteUserFromFile removes a user record from the file store.
-func (uc *UserController) DeleteUserFromFile(w http.ResponseWriter, r *http.Request) {
-	log := uc.userHandlerLog.WithContext(r.Context()).Method("DeleteUserFromFile")
-
-	id := chi.URLParam(r, "id")
-
-	// check if user exists before attempting delete
-	existing, _ := uc.fileStore.GetRaw(id)
-	if existing == nil {
-		log.Errorf("User not found. id: %s", id)
-		json.WriteJsonErrorResponse(w, http.StatusNotFound, "User not found.", nil)
-		return
-	}
-
-	if err := uc.fileStore.DeleteRecord(id); err != nil {
-		log.Errorf("User delete failed from text file. %v", err)
-		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User delete failed from text file.", err)
-		return
-	}
-
-	json.WriteJsonSuccessResponse(w, http.StatusOK, "User deleted from text file", nil)
 }

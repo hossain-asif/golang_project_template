@@ -56,12 +56,6 @@ func (ur *UserRouter) v1() http.Handler {
 		r.Get("/profile/cursor", ur.userController.GetUsersByCursorPagination)
 		r.Get("/profile/seek", ur.userController.GetUsersBySeekPagination)
 
-		// file system
-		r.Get("/user/file/{id}", ur.userController.GetUserFromFile)
-		r.Post("/user/file", ur.userController.AddUserToFile)
-		r.Patch("/user/file/{id}", ur.userController.UpdateUserInFile)
-		r.Delete("/user/file/{id}", ur.userController.DeleteUserFromFile)
-
 
 	})
 

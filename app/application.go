@@ -4,7 +4,6 @@ import (
 	"context"
 	"go_project_structure/common_pkg/logger"
 	"go_project_structure/common_pkg/scheduler"
-	"go_project_structure/common_pkg/storage"
 	config "go_project_structure/config/env"
 	"go_project_structure/internal/module"
 	"os/signal"
@@ -57,11 +56,10 @@ func (app *Application) Run() error {
 	// }
 	// defer mongoHook.Disconnect()
 
-	dep, cleanup, err := app.setupInfrastructure()
+	dep, err := app.setupInfrastructure()
 	if err != nil {
 		return err
 	}
-	defer cleanup()
 
 	rootRouter, allTasks, err := dependencyInit(app.Modules, dep)
 	if err != nil {
@@ -75,20 +73,13 @@ func (app *Application) Run() error {
 
 // setupInfrastructure initialises shared infra (file store, database) and
 // returns a populated Dependency bundle together with a cleanup function.
-func (app *Application) setupInfrastructure() (module.Dependency, func(), error) {
-	fs, err := SetupFileStore()
-	if err != nil {
-		return module.Dependency{}, nil, err
-	}
-	storage.SetDefault(fs)
+func (app *Application) setupInfrastructure() (module.Dependency, error) {
 
 	db, err := SetupDB()
 	if err != nil {
-		fs.Close()
-		return module.Dependency{}, nil, err
+		return module.Dependency{}, err
 	}
 
-	dep := module.Dependency{DB: db, FS: fs}
-	cleanup := func() { fs.Close() }
-	return dep, cleanup, nil
+	dep := module.Dependency{DB: db}
+	return dep, nil
 }
