@@ -4,7 +4,7 @@ import (
 	"context"
 	"go_project_structure/common_pkg/scheduler"
 	repositories "go_project_structure/internal/db/repositories/user"
-	"go_project_structure/internal/module"
+	"go_project_structure/internal/pkg/module"
 	"time"
 
 	"github.com/go-chi/chi/v5"

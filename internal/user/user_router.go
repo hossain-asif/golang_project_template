@@ -2,7 +2,7 @@ package user
 
 import (
 	"go_project_structure/common_pkg/proxy"
-	"go_project_structure/internal/middlewares"
+	"go_project_structure/internal/pkg/middlewares"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"

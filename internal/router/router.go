@@ -1,7 +1,7 @@
 package router
 
 import (
-	"go_project_structure/internal/module"
+	"go_project_structure/internal/pkg/module"
 	"go_project_structure/internal/user"
 
 	"github.com/go-chi/chi/v5"

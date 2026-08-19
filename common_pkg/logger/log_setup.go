@@ -9,7 +9,7 @@ import (
 
 var Log *LoggerWrapper
 
-func InitLogger() {
+func InitializeLogger() {
 	cfg := LogConfig{
 		Environment:  config.GetString("APP_ENV", "development"),
 		Level:        config.GetString("LOG_LEVEL", "info"),

@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 	"go_project_structure/common_pkg/scheduler"
-	"go_project_structure/internal/module"
+	"go_project_structure/internal/pkg/module"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -14,6 +14,10 @@ func dependencyInit(modules []module.Module, dependency module.Dependency) (*chi
 
 	if dependency.DB == nil {
 		return nil, nil, fmt.Errorf("dependencyInit: nil db")
+	}
+
+	if dependency.RedisClient == nil {
+		return nil, nil, fmt.Errorf("dependencyInit: nil redisCLient")
 	}
 
 	rootRouter := chi.NewRouter()

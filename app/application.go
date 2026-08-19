@@ -5,7 +5,7 @@ import (
 	"go_project_structure/common_pkg/logger"
 	"go_project_structure/common_pkg/scheduler"
 	config "go_project_structure/config/env"
-	"go_project_structure/internal/module"
+	"go_project_structure/internal/pkg/module"
 	"os/signal"
 	"syscall"
 )
@@ -47,9 +47,9 @@ func (app *Application) Run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	logger.InitLogger()
+	logger.InitializeLogger()
 
-	dep, err := app.setupInfrastructure()
+	dep, err := app.initializeResources()
 	if err != nil {
 		return err
 	}
@@ -66,14 +66,13 @@ func (app *Application) Run() error {
 
 // setupInfrastructure initialises shared infra (file store, database) and
 // returns a populated Dependency bundle together with a cleanup function.
-func (app *Application) setupInfrastructure() (module.Dependency, error) {
+func (app *Application) initializeResources() (module.Dependency, error) {
 
+	// db setup
 	db, err := SetupDB()
 	if err != nil {
 		return module.Dependency{}, err
 	}
-
-
 
 	// Connect MongoDB as a logrus hook (uncomment when needed)
 	// mongoHook, err := setupMongoHook()
@@ -82,7 +81,7 @@ func (app *Application) setupInfrastructure() (module.Dependency, error) {
 	// }
 	// defer mongoHook.Disconnect()
 
-
+	// redis setup
 	redisClient, err := SetupRedis()
 	if err != nil {
 		return module.Dependency{}, err

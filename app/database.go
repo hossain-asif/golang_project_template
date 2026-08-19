@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// persistence database
 func SetupDB() (*gorm.DB, error) {
 	db, err := dbConfig.SetupDB()
 	if err != nil {
@@ -18,6 +19,7 @@ func SetupDB() (*gorm.DB, error) {
 	return db, nil
 }
 
+// no-sql database for logger
 func setupMongoHook() (*dbConfig.MongoDB, error) {
 	hook, err := dbConfig.SetupMongoDB()
 	if err != nil {
@@ -28,6 +30,7 @@ func setupMongoHook() (*dbConfig.MongoDB, error) {
 	return hook, nil
 }
 
+// non-persistence database
 func SetupRedis() (*redis.Client, error) {
 	db, err := dbConfig.SetupRedis()
 	if err != nil {

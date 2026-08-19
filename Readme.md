@@ -1,120 +1,377 @@
-```
-go_project_structure_domain_driven_design/
-├── main.go                    # Entry point
-├── app/
-│   └── application.go         # Server bootstrap (chi router, graceful shutdown)
-├── config/
-│   ├── env/env.go             # .env loader + typed getters
-│   └── db/db.go               # GORM connection setup
-├── internal/                  # All domain-specific code
-│   ├── module/module.go       # Module interface contract
-│   ├── router/router.go       # Global module registry (register domains here)
-│   ├── dto/user_dto.go        # Request/Response data transfer objects
-│   ├── middlewares/
-│   │   └── user_middleware.go # Domain-specific request validators
-│   ├── db/
-│   │   ├── models/user_model.go        # GORM model
-│   │   └── repositories/user_repository.go  # Data access layer
-│   └── user/                  # The "user" bounded context (domain)
-│       ├── module.go          # Wires repo+svc+controller+router; registers tasks
-│       ├── user_router.go     # Route declarations for user domain
-│       ├── user_handler.go    # HTTP handlers (UserController)
-│       ├── user_service.go    # Business logic interface + impl
-│       └── user_csv_service.go # CSV-related service methods (split for clarity)
-├── common_pkg/                # Shared, domain-agnostic utilities
-│   ├── csv/csv.go             # Generic CSV export + streaming upload with worker pool
-│   ├── json/json.go           # JSON read/write helpers
-│   ├── middlewares/
-│   │   ├── request_logger.go  # Request ID injection + logging
-│   │   ├── jwt_auth_middleware.go  # JWT Bearer token verification
-│   │   └── rate_limit.go      # Token-bucket rate limiter (5 req/sec)
-│   ├── proxy/proxy.go         # Reverse proxy helper (strips path prefix)
-│   ├── scheduler/
-│   │   ├── task_assignment.go # Public entry: TaskAssignment(ctx, tasks)
-│   │   └── ticker.go          # Task runner with skip-if-busy + panic recovery
-│   └── worker_pool/
-│       └── worker_pool.go     # Generic goroutine pool (Thread Pool pattern)
-├── utils/
-│   └── authentication/
-│       └── authentication.go  # bcrypt hash + verify helpers
-├── db/
-│   └── migrations/            # (placeholder for SQL migrations)
-└── exports/                   # CSV files written here at runtime
+
+# Getting started
+1. Make your own copy
+The cleanest path is "Use this template" → Create a new repository on GitHub. You get your own repo with no inherited commit history.
+If you'd rather clone:
+
+```bash
+git clone https://github.com/hossain-asif/golang_project_template.git my-app
+cd my-app
+rm -rf .git && git init
 ```
 
+2. Rename the module
+Don't skip this. The module is named go_project_structure and every internal import points at that name. Until you change it, your project is still carrying this one's identity.
+
+```bash
+go mod edit -module github.com/yourname/my-app
+```
+
+Then update the imports across every Go file:
+
+```bash
+# macOS
+grep -rl 'go_project_structure' --include='*.go' . \
+  | xargs sed -i '' 's|go_project_structure|github.com/yourname/my-app|g'
+
+# Linux — same command, drop the empty quotes after -i
+grep -rl 'go_project_structure' --include='*.go' . \
+  | xargs sed -i 's|go_project_structure|github.com/yourname/my-app|g'
+```
+
+Finish with:
+
+```bash
+go mod tidy
+```
+
+If it compiles, the rename took.
+
+3. Configure the environment
+
+```bash
+cp .env.example .env
+```
+
+Open .env and fill it in. Every value falls back to a sane default except JWT_SECRET — generate a real one:
+
+```bash
+openssl rand -base64 48
+```
+
+1. Start Postgres and Redis
+Whatever you normally use is fine. If you want them up fast:
+
+```bash
+docker run -d --name pg -e POSTGRES_USER=user -e POSTGRES_PASSWORD=12345 \
+  -e POSTGRES_DB=mydb -p 5432:5432 postgres:16
+
+docker run -d --name redis -p 6379:6379 redis:7
+```
+
+Match the credentials to whatever you put in .env.
+
+5. Run the app
+
+```bash
+go mod download
+go run main.go
+```
+
+It listens on the PORT from your .env (default :8080).
+
+---
+
+# Run the migrations
+Install goose once:
+
+```bash
+go install github.com/pressly/goose/v3/cmd/goose@latest
+```
+
+Then open the Makefile and update DB_URL at the top to match your database. It's hardcoded there — it does not read from .env .
+
+```bash
+make migrate-up
+```
+
+Other migration commands:
+
+```bash
+make migrate-create name="create_orders_table"   # new migration
+make migrate-status                              # what's applied
+make migrate-down                                # roll back one
+make migrate-reset                               # roll back everything
+```
+
+---
+
+# Adding a new domain module
+
+1. Add the repository at `internal/db/repositories/order/`
+2. Add the model at `internal/db/models/order.go`
+3. Add the DTOs at `internal/dto/order_dto.go`
+4. Create internal/order/ with:
+
+```
+order_router.go      # route definitions
+order_middleware.go  # middleware implementation
+order_handler.go     # HTTP layer — decode, validate, respond
+order_service.go     # business logic
+module.go            # wires the above together
+```
+
+5. Implement Initialize in `internal/order/module.go`:
+
+```go
+type OrderModule struct {
+    repository repositories.OrderRepository
+    service    OrderService
+}
+
+func (om *OrderModule) Initialize(dep module.Dependency, r chi.Router) ([]scheduler.Task, error) {
+    om.repository = repositories.NewOrderRepository(dep.DB)
+    om.service = NewOrderService(om.repository)
+    handler := NewOrderHandler(om.service)
+    NewOrderRouter(handler).Register(r)
+
+    return nil, nil   // or return background tasks — see below
+}
+```
+
+6. Background tasks
+A module can return recurring jobs from Initialize. The scheduler starts them with the app and shuts them down with it:
+
+```go
+return []scheduler.Task{
+    {
+        Name: "order.expire-stale",
+        Interval: 30 * time.Minute,
+        Fn: func(ctx context.Context) error {
+            return om.service.ExpireStale(ctx)
+        },
+    },
+}, nil
+```
+
+6. Register it in `internal/router/router.go`:
+
+```go
+var Modules = []module.Module{
+    &user.UserModule{},
+    &order.OrderModule{},   // ← the one line that turns it on
+}
+```
+
+---
+
+# Adding Infrastructure Resources
+Worked example: adding RabbitMQ
+Say you want a message broker available to every module.
+
+1. declare the variables
+
+Add to `.env.example`:
+
+```bash
+# rabbitmq 
+RABBITMQ_URL=amqp://guest:guest@127.0.0.1:5672/
+RABBITMQ_EXCHANGE=app.events
+RABBITMQ_TIMEOUT_SECONDS=10
+```
+
+Then put real values in your own `.env`. Keep the two files in sync — `.env` is gitignored, so `.env.example` is the only thing the next developer sees.
+
+2. write the connector
+
+New file: `config/resources/rabbitmq.go`
+
+The folder is called resources, but it holds anything connection-shaped.
+
+```go
+package resources
+
+import (
+	"fmt"
+	"time"
+
+	"go_project_structure/common_pkg/logger"
+	env "go_project_structure/config/env"
+
+	amqp "github.com/rabbitmq/amqp091-go"
+)
+
+// Package-scoped logger — defined once, reused across all methods.
+var rabbitLog = logger.Log.Scope("config", "database", "rabbitmq")
+
+// rabbitConfig holds everything needed to reach the broker.
+type rabbitConfig struct {
+	URL      string
+	Exchange string
+	Timeout  time.Duration
+}
+
+// loadRabbitConfig reads all RabbitMQ values from the environment.
+func loadRabbitConfig() rabbitConfig {
+	return rabbitConfig{
+		URL:      env.GetString("RABBITMQ_URL", "amqp://guest:guest@127.0.0.1:5672/"),
+		Exchange: env.GetString("RABBITMQ_EXCHANGE", "app.events"),
+		Timeout:  time.Duration(env.GetInt("RABBITMQ_TIMEOUT_SECONDS", 10)) * time.Second,
+	}
+}
+
+// RabbitMQ wraps the connection and channel so the caller can close both.
+type RabbitMQ struct {
+	conn     *amqp.Connection
+	Channel  *amqp.Channel
+	Exchange string
+}
+
+// SetupRabbitMQ dials the broker, opens a channel, declares the exchange,
+// and returns a ready-to-use client.
+//
+// The caller is responsible for calling Close on shutdown.
+func SetupRabbitMQ() (*RabbitMQ, error) {
+	log := rabbitLog.Method("SetupRabbitMQ")
+
+	cfg := loadRabbitConfig()
+
+	conn, err := amqp.DialConfig(cfg.URL, amqp.Config{Dial: amqp.DefaultDial(cfg.Timeout)})
+	if err != nil {
+		log.WithError(err).Error("Failed to dial RabbitMQ.")
+		return nil, fmt.Errorf("dial rabbitmq: %w", err)
+	}
+
+	ch, err := conn.Channel()
+	if err != nil {
+		_ = conn.Close()
+		log.WithError(err).Error("Failed to open RabbitMQ channel.")
+		return nil, fmt.Errorf("open channel: %w", err)
+	}
+
+	// Declaring the exchange here doubles as the connectivity check —
+	// it round-trips to the broker and fails loudly if anything is wrong.
+	if err := ch.ExchangeDeclare(cfg.Exchange, "topic", true, false, false, false, nil); err != nil {
+		_ = ch.Close()
+		_ = conn.Close()
+		log.WithError(err).Error("Failed to declare exchange.")
+		return nil, fmt.Errorf("declare exchange %q: %w", cfg.Exchange, err)
+	}
+
+	log.Infof("Successfully connected to RabbitMQ. exchange: %s", cfg.Exchange)
+
+	return &RabbitMQ{conn: conn, Channel: ch, Exchange: cfg.Exchange}, nil
+}
+
+// Close cleanly shuts the channel and connection down.
+func (r *RabbitMQ) Close() {
+	if r == nil {
+		return
+	}
+	if r.Channel != nil {
+		_ = r.Channel.Close()
+	}
+	if r.conn != nil {
+		if err := r.conn.Close(); err != nil {
+			rabbitLog.Method("Close").WithError(err).Warn("RabbitMQ close encountered an error.")
+		}
+	}
+}
+```
+
+Install the driver:
+
+```bash
+go get github.com/rabbitmq/amqp091-go
+```
+
+3. add the app-level wrapper
+
+In `app/resource.go`, alongside `SetupDB` and `SetupRedis`:
+
+```go
+// message broker
+func SetupRabbitMQ() (*dbConfig.RabbitMQ, error) {
+	broker, err := dbConfig.SetupRabbitMQ()
+	if err != nil {
+		appLog.Method("SetupRabbitMQ").WithError(err).Error("Error setting up rabbitmq.")
+		return nil, fmt.Errorf("rabbitmq setup: %w", err)
+	}
+	return broker, nil
+}
+```
+
+This layer looks redundant — it calls one function and returns. It isn't. It's where the app-level log scope (appLog) and the app-level error context get attached, so failures read as "rabbitmq setup: dial rabbitmq: connection refused" instead of a bare driver error.
+
+4. add the field to Dependency
+
+In `internal/pkg/module/module.go`:
+
+```go
+type Dependency struct {
+	DB          *gorm.DB
+	RedisClient *redis.Client
+	Broker      *resource.RabbitMQ
+
+	// add new infra here only
+}
+```
+
+That comment in the struct is the rule: this is the only place a shared resource gets registered for module consumption.
+
+5. build it during startup
+
+In `app/application.go`, inside `initializeResources()`:
+
+```go
+func (app *Application) initializeResources() (module.Dependency, error) {
+
+	// db setup
+	db, err := SetupDB()
+	if err != nil {
+		return module.Dependency{}, err
+	}
+
+	// redis setup
+	redisClient, err := SetupRedis()
+	if err != nil {
+		return module.Dependency{}, err
+	}
+
+	// broker setup
+	broker, err := SetupRabbitMQ()
+	if err != nil {
+		return module.Dependency{}, err
+	}
+
+	dep := module.Dependency{
+		DB:          db,
+		RedisClient: redisClient,
+		Broker:      broker,
+	}
+	return dep, nil
+}
+```
+
+Order matters if one resource depends on another. Otherwise put it wherever it reads best.
+
+6. guard against nil
+
+In `app/modules.go`, inside `dependencyInit()`:
+
+```go
+if dependency.Broker == nil {
+	return nil, nil, fmt.Errorf("dependencyInit: nil broker")
+}
+```
+
+This catches the case where someone adds the field to Dependency but forgets to populate it in step 5 — a nil pointer that would otherwise blow up at the first publish, in production, hours later.
+
+7. use it
+
+Now any module can pull it out of the dependency bundle. In `internal/order/module.go`:
+
+```go
+func (om *OrderModule) Initialize(dep module.Dependency, r chi.Router) ([]scheduler.Task, error) {
+	om.repository = repositories.NewOrderRepository(dep.DB)
+	om.publisher  = NewOrderPublisher(dep.Broker)          // ← here
+	om.service    = NewOrderService(om.repository, om.publisher)
+
+	NewOrderRouter(NewOrderHandler(om.service)).Register(r)
+	return nil, nil
+}
+```
+
+Pass the client down as a constructor argument. Don't reach for dep deeper than Initialize — that's the boundary where injection ends and business logic begins.
 
 
-|Pattern|Where|
-|---|---|
-|**Interface-based DI**|Repository + Service are interfaces; concrete structs injected at module init|
-|**Module self-registration**|Each domain exposes a `Module` interface; app iterates `router.Modules`|
-|**Context propagation**|Middlewares inject validated payloads + auth claims via `context.WithValue`|
-|**Raw SQL over ORM magic**|Repository uses explicit SQL with `db.Exec`/`db.Raw` for clarity|
-|**Soft delete**|`gorm.Model` provides `DeletedAt`; queries always filter `deleted_at IS NULL`|
-|**Partial updates with pointer types**|`*string` fields in `UpdateUserRequest` — nil means "don't update that field"|
-|**Generic utilities**|Worker pool and CSV export use Go generics for type safety|
-|**Graceful shutdown**|`signal.NotifyContext` cancels ctx on SIGINT/SIGTERM; server shuts down with 10s timeout|
-
-Worker Pool (common_pkg/worker_pool/worker_pool.go)
-A generic Thread Pool using Go generics ([I any, O any]):
-
-Producer → JobChan → [Worker 1] → ResultChan → Consumer
-                  → [Worker 2] →
-                  → [Worker N] →
-NewWorkerPool(workerCount, bufferSize, processFunc) — full version with typed results
-NewPool(workerCount, processFunc) — simplified version for fire-and-forget (no output)
-Used by the CSV upload pipeline to process batches in parallel
-
-
-Scheduler (common_pkg/scheduler/)
-Runs periodic background tasks. Each Task has a Name, Interval, and Fn func(ctx context.Context) error.
-
-The Ticker.run() method is robust:
-
-Uses time.NewTicker per task
-Skip-if-busy: if the previous run hasn't finished, the next tick is skipped (no pile-up)
-Panic recovery: a panicking task is logged and reset, not crashing the server
-Context-aware: stops cleanly when ctx is cancelled (on SIGINT/SIGTERM)
-StartAll() launches each task in its own goroutine and waits with a sync.WaitGroup.
-
-
-CSV Package (common_pkg/csv/csv.go)
-Export (ExportToCSV):
-
-Accepts any slice of structs
-Uses reflect to read csv:"fieldname" struct tags as column headers
-Writes timestamped file to exports/ directory
-Upload + Stream (UploadAndStreamCSV):
-
-Parses multipart form (max 10MB)
-Reads CSV rows into batches of configurable size
-Submits each batch to a WorkerPool for parallel processing
-Collects and returns the first error
-
-
-Proxy (common_pkg/proxy/proxy.go)
-ProxyToService(targetURL, pathPrefix) creates an httputil.ReverseProxy that:
-
-Strips the local pathPrefix from the request path before forwarding
-Sets Host header to the target's host
-Forwards any userId from context as X-User-Id header (inter-service auth pattern)
-Example: GET /fake-store/products → GET https://fakestoreapi.com/products
-
-
-
-Full Request Lifecycle Example: POST /signup
-Client → POST /signup (JSON body)
-  │
-  ├─ RequestLoggerMiddleware  → logs, injects requestId into ctx
-  ├─ UserRegisterRequestValidator → decodes JSON into RegisterUserRequest, injects into ctx
-  │
-  └─ UserController.RegisterUser
-       ├─ reads registration_payload from ctx
-       ├─ builds models.User{Name, Email, Password}
-       ├─ UserServiceImpl.CreateUser
-       │    ├─ HashPassword(plaintext) → bcrypt hash
-       │    └─ UserRepositoryImpl.Create
-       │         ├─ INSERT INTO users (name, email, password) VALUES (?, ?, ?)
-       │         ├─ pg error code handling (23505 = duplicate email)
-       │         └─ returns rows affected
-       └─ WriteJsonSuccessResponse(200, message, {name, email})
