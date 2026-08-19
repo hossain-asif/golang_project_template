@@ -1,7 +1,25 @@
+# Pull in .env so make and the Go app read the exact same values.
+# The leading "-" means "don't blow up if .env is missing" (fresh clone, CI).
+-include .env
 
-MIGRATION_FOLDER=db/migrations
+ifeq ($(wildcard .env),)
+$(warning .env not found - falling back to defaults. Run: cp .env.example .env)
+endif
+
+# "?=" means "only set this if it isn't already set", so .env always wins.
+DB_HOST     ?= 127.0.0.1
+DB_PORT     ?= 5432
+DB_NAME     ?= mydb
+DB_USER     ?= user
+DB_PASSWORD ?= 12345
+DB_SSLMODE  ?= disable
+DB_TIMEZONE ?= UTC
+
+DB_URL ?= postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=$(DB_SSLMODE)&timezone=$(DB_TIMEZONE)
+
+MIGRATION_FOLDER ?= db/migrations
 # DB_URL="host=127.0.0.1 user=user password=12345 dbname=mydb port=5432 sslmode=disable TimeZone=UTC"
-DB_URL="postgresql://user:12345@127.0.0.1:5432/mydb?sslmode=disable&timezone=UTC"
+# DB_URL="postgresql://user:12345@127.0.0.1:5432/mydb?sslmode=disable&timezone=UTC"
 
 # create a new migration 
 migrate-create:  # command: gmake migrate-create name="create_entity_table"
