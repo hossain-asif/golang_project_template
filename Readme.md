@@ -7,7 +7,11 @@ If you'd rather clone:
 ```bash
 git clone https://github.com/hossain-asif/golang_project_template.git my-app
 cd my-app
-rm -rf .git && git init
+rm -rf .git
+git init
+git add .
+git commit -m "initialize project"
+git branch -M main
 ```
 
 2. Rename the module
