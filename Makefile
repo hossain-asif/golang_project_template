@@ -25,33 +25,33 @@ MIGRATION_FOLDER ?= db/migrations
 migrate-create:  # command: gmake migrate-create name="create_entity_table"
 	goose -dir $(MIGRATION_FOLDER) create $(name) sql
 migrate-up:      # command: gmake migrate-up
-	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) up
+	goose -dir $(MIGRATION_FOLDER) postgres "$(DB_URL)" up
 migrate-down:    # command: gmake migrate-down
-	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) down
+	goose -dir $(MIGRATION_FOLDER) postgres "$(DB_URL)" down
 migrate-status:  # command: gmake migrate-status
-	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) status
+	goose -dir $(MIGRATION_FOLDER) postgres "$(DB_URL)" status
 migrate-reset:   # command: gmake migrate-reset
-	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) reset
+	goose -dir $(MIGRATION_FOLDER) postgres "$(DB_URL)" reset
 migrate-version: # command: gmake migrate-version version=1
-	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) version $(version)
+	goose -dir $(MIGRATION_FOLDER) postgres "$(DB_URL)" version $(version)
 migrate-up-to:   # command: gmake migrate-up-to version=1
-	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) up-to $(version)
+	goose -dir $(MIGRATION_FOLDER) postgres "$(DB_URL)" up-to $(version)
 migrate-down-to: # command: gmake migrate-down-to version=1
-	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) down-to $(version)
+	goose -dir $(MIGRATION_FOLDER) postgres "$(DB_URL)" down-to $(version)
 migrate-fix:     # command: gmake migrate-fix version=1
-	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) fix $(version)
+	goose -dir $(MIGRATION_FOLDER) postgres "$(DB_URL)" fix $(version)
 migrate-validate: # command: gmake migrate-validate
-	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) validate
+	goose -dir $(MIGRATION_FOLDER) postgres "$(DB_URL)" validate
 migrate-verbose: # command: gmake migrate-verbose
-	goose -dir $(MIGRATION_FOLDER) -v postgres $(DB_URL) up
+	goose -dir $(MIGRATION_FOLDER) -v postgres "$(DB_URL)" up
 migrate-redo:    # command: gmake migrate-redo
-	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) redo
+	goose -dir $(MIGRATION_FOLDER) postgres "$(DB_URL)" redo
 migrate-to:	  # command: gmake migrate-to version=1
-	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) to $(version)
+	goose -dir $(MIGRATION_FOLDER) postgres "$(DB_URL)" to $(version)
 migrate-down-to: # command: gmake migrate-down-to version=1
-	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) down-to $(version)
+	goose -dir $(MIGRATION_FOLDER) postgres "$(DB_URL)" down-to $(version)
 migrate-force:    # command: gmake migrate-force version=1
-	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) force $(version)
+	goose -dir $(MIGRATION_FOLDER) postgres "$(DB_URL)" force $(version)
 migrate-help:     # command: gmake migrate-help
 	goose -h
 migrate-up-file:   # command: gmake migrate-up-file file=20260212174735_create_user_table.sql
