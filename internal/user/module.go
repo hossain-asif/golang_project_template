@@ -65,9 +65,5 @@ func (m *UserModule) RegisterTasks() []scheduler.Task {
 				return err
 			},
 		},
-		{
-			Name:     "user.file-rebuild",
-			Interval: 59 * time.Minute,
-		},
 	}
 }

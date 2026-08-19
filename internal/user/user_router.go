@@ -29,10 +29,8 @@ func (ur *UserRouter) v1() http.Handler {
 	r.Use(middlewares.RequestLoggerMiddleware)
 
 	// Public
-	r.With(middlewares.UserRegisterRequestValidator).
-		Post("/signup", ur.userController.RegisterUser)
-	r.With(middlewares.UserLoginRequestValidator).
-		Post("/login", ur.userController.LoginUser)
+	r.Post("/signup", ur.userController.RegisterUser)
+	r.Post("/login", ur.userController.LoginUser)
 
 	// Protected (JWT required)
 	r.Group(func(r chi.Router) {
@@ -41,21 +39,20 @@ func (ur *UserRouter) v1() http.Handler {
 		r.Route("/profile/{id}", func(r chi.Router) {
 			r.Get("/", ur.userController.GetUserById)
 			r.Delete("/", ur.userController.DeleteUser)
-			r.With(middlewares.RateLimitMiddleware, middlewares.UserUpdateRequestValidator).
+			r.With(middlewares.RateLimitMiddleware).
 				Patch("/", ur.userController.UpdateUser)
 		})
 
 		r.Get("/profile/all", ur.userController.GetAllUsers)
 		r.Get("/profile/export", ur.userController.ExportUsersCSV)
 		r.Get("/profile/download", ur.userController.DownloadFileHandler)
-		r.With(middlewares.UserUploadCSVRequestValidator).
+		r.With(UserUploadCSVRequestValidator).
 			Post("/profile/upload", ur.userController.UploadUserCSV)
 
 		// pagination
 		r.Get("/profile/offset", ur.userController.GetUsersByOffsetPagination)
 		r.Get("/profile/cursor", ur.userController.GetUsersByCursorPagination)
 		r.Get("/profile/seek", ur.userController.GetUsersBySeekPagination)
-
 
 	})
 
@@ -71,10 +68,8 @@ func (ur *UserRouter) v2() http.Handler {
 	r.Use(middlewares.RequestLoggerMiddleware)
 
 	// Public
-	r.With(middlewares.UserRegisterRequestValidator).
-		Post("/signup", ur.userController.RegisterUser)
-	r.With(middlewares.UserLoginRequestValidator).
-		Post("/login", ur.userController.LoginUser)
+	r.Post("/signup", ur.userController.RegisterUser)
+	r.Post("/login", ur.userController.LoginUser)
 
 	// Protected (JWT required)
 	r.Group(func(r chi.Router) {
@@ -87,7 +82,7 @@ func (ur *UserRouter) v2() http.Handler {
 		r.Route("/profile/{id}", func(r chi.Router) {
 			r.Get("/", ur.userController.GetUserById)
 			r.Delete("/", ur.userController.DeleteUser)
-			r.With(middlewares.RateLimitMiddleware, middlewares.UserUpdateRequestValidator).
+			r.With(middlewares.RateLimitMiddleware).
 				Patch("/", ur.userController.UpdateUser)
 		})
 	})

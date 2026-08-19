@@ -10,7 +10,6 @@ import (
 	"go_project_structure/common_pkg/pagination/seek_pagination"
 	"go_project_structure/internal/db/models"
 	"go_project_structure/internal/dto"
-	enums "go_project_structure/utils/enums"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -39,10 +38,17 @@ func (uc *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	log := uc.userHandlerLog.WithContext(r.Context()).Method("RegisterUser")
 
 	// request payload
-	RequestPayload, ok := r.Context().Value(enums.CtxRegistrationPayload).(dto.RegisterUserRequest)
-	if !ok {
-		log.Errorf("Invalid request context")
-		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid request context", nil)
+	var RequestPayload = dto.RegisterUserRequest{}
+	if payloadErr := json.ReadJsonBody(r, &RequestPayload); payloadErr != nil {
+		log.Errorf("Json encoding error. %v", payloadErr)
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json encoding error.", payloadErr)
+		return
+	}
+
+	// validate the payload
+	if err := RequestPayload.Validate(); err != nil {
+		log.Errorf("Validation failed. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Validation failed", err)
 		return
 	}
 
@@ -76,10 +82,18 @@ func (uc *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 func (uc *UserController) LoginUser(w http.ResponseWriter, r *http.Request) {
 	log := uc.userHandlerLog.WithContext(r.Context()).Method("LoginUser")
 
-	RequestPayload, ok := r.Context().Value(enums.CtxLoginPayload).(dto.LoginUserRequest)
-	if !ok {
-		log.Errorf("Invalid request context")
-		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid request context", nil)
+	// read json body
+	var RequestPayload = dto.LoginUserRequest{}
+	if payloadErr := json.ReadJsonBody(r, &RequestPayload); payloadErr != nil {
+		log.Errorf("Json encoding error. %v", payloadErr)
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json encoding error.", payloadErr)
+		return
+	}
+
+	// validate the payload
+	if err := RequestPayload.Validate(); err != nil {
+		log.Errorf("Validation failed. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Validation failed", err)
 		return
 	}
 
@@ -159,16 +173,25 @@ func (uc *UserController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 func (uc *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	log := uc.userHandlerLog.WithContext(r.Context()).Method("UpdateUser")
 
-	userId := chi.URLParam(r, "id")
-
-	requestPayload, ok := r.Context().Value(enums.CtxUpdatePayload).(dto.UpdateUserRequest)
-	if !ok {
-		log.Errorf("Invalid update request context.")
-		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid request context", nil)
+	// read json body for update request
+	var RequestPayload = dto.UpdateUserRequest{}
+	if payloadErr := json.ReadJsonBody(r, &RequestPayload); payloadErr != nil {
+		log.Errorf("Json encoding error. %v", payloadErr)
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Json encoding error.", payloadErr)
 		return
 	}
 
-	message, err := uc.UserService.UpdateUser(r.Context(), userId, &requestPayload)
+	// validate the payload
+	if err := RequestPayload.Validate(); err != nil {
+		log.Errorf("Validation failed. %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusBadRequest, "Validation failed", err)
+		return
+	}
+
+	// extract url param
+	userId := chi.URLParam(r, "id")
+
+	message, err := uc.UserService.UpdateUser(r.Context(), userId, &RequestPayload)
 	if err != nil {
 		log.Errorf("User update failed. %v", err)
 		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "User update failed.", err)
