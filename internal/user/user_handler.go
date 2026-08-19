@@ -26,7 +26,7 @@ type UserController struct {
 	cache          *UserListCache
 }
 
-func NewUserController(_userService UserService) *UserController {
+func NewUserHandler(_userService UserService) *UserController {
 	return &UserController{
 		UserService:    _userService,
 		userHandlerLog: logger.Log.Scope("", "user", "user_handler"),

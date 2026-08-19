@@ -49,13 +49,6 @@ func (app *Application) Run() error {
 
 	logger.InitLogger()
 
-	// Connect MongoDB as a logrus hook (uncomment when needed)
-	// mongoHook, err := setupMongoHook()
-	// if err != nil {
-	// 	return err
-	// }
-	// defer mongoHook.Disconnect()
-
 	dep, err := app.setupInfrastructure()
 	if err != nil {
 		return err
@@ -80,6 +73,24 @@ func (app *Application) setupInfrastructure() (module.Dependency, error) {
 		return module.Dependency{}, err
 	}
 
-	dep := module.Dependency{DB: db}
+
+
+	// Connect MongoDB as a logrus hook (uncomment when needed)
+	// mongoHook, err := setupMongoHook()
+	// if err != nil {
+	// 	return err
+	// }
+	// defer mongoHook.Disconnect()
+
+
+	redisClient, err := SetupRedis()
+	if err != nil {
+		return module.Dependency{}, err
+	}
+
+	dep := module.Dependency{
+		DB: db,
+		RedisClient: redisClient,
+	}
 	return dep, nil
 }

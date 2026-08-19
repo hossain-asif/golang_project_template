@@ -19,8 +19,8 @@ func NewUserRouter(_userController *UserController) *UserRouter {
 }
 
 func (ur *UserRouter) Register(r chi.Router) {
-	r.Mount("/api/v1", ur.v1())
-	r.Mount("/api/v2", ur.v2())
+	r.Mount("/api/v1/users", ur.v1())
+	r.Mount("/api/v2/users", ur.v2())
 }
 
 func (ur *UserRouter) v1() http.Handler {

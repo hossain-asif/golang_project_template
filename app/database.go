@@ -5,6 +5,7 @@ import (
 	"go_project_structure/common_pkg/logger"
 	dbConfig "go_project_structure/config/database"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -25,4 +26,13 @@ func setupMongoHook() (*dbConfig.MongoDB, error) {
 	}
 	logger.AddHook(hook)
 	return hook, nil
+}
+
+func SetupRedis() (*redis.Client, error) {
+	db, err := dbConfig.SetupRedis()
+	if err != nil {
+		appLog.Method("SetupRedis").WithError(err).Error("Error setting up redis.")
+		return nil, fmt.Errorf("redis setup: %w", err)
+	}
+	return db, nil
 }

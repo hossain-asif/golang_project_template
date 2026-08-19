@@ -12,23 +12,22 @@ import (
 // lifecycle on every module, then returns the assembled router and task list.
 func dependencyInit(modules []module.Module, dependency module.Dependency) (*chi.Mux, []scheduler.Task, error) {
 
-	rootRouter := chi.NewRouter()
-	var allTasks []scheduler.Task
-
-	for _, m := range modules {
-		// Step 1 — wire dependencies
-		if err := m.InitDependency(dependency); err != nil {
-			appLog.Method("dependencyInit").WithError(err).
-				Errorf("Module InitDependency failed: %T", m)
-			return nil, nil, fmt.Errorf("module init (%T): %w", m, err)
-		}
-
-		// Step 2 — mount routes
-		m.RegisterRoutes(rootRouter)
-
-		// Step 3 — collect tasks
-		allTasks = append(allTasks, m.RegisterTasks()...)
+	if dependency.DB == nil {
+		return nil, nil, fmt.Errorf("dependencyInit: nil db")
 	}
 
-	return rootRouter, allTasks, nil
+	rootRouter := chi.NewRouter()
+	var scheduledTasks []scheduler.Task
+
+	for _, m := range modules {
+
+		tasks, err := m.Initialize(dependency, rootRouter)
+		if err != nil {
+			return nil, nil, fmt.Errorf("module initialize (%T): %w", m, err)
+		}
+
+		scheduledTasks = append(scheduledTasks, tasks...)
+	}
+
+	return rootRouter, scheduledTasks, nil
 }
