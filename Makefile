@@ -36,5 +36,8 @@ migrate-force:    # command: gmake migrate-force version=1
 	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) force $(version)
 migrate-help:     # command: gmake migrate-help
 	goose -h
-
+migrate-up-file:   # command: gmake migrate-up-file file=20260212174735_create_user_table.sql
+	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) up-to $(shell basename "$(file)" | grep -oE '^[0-9]+')
+migrate-down-file: # command: gmake migrate-down-file file=20260212174735_create_user_table.sql
+	goose -dir $(MIGRATION_FOLDER) postgres $(DB_URL) down-to $(shell basename "$(file)" | grep -oE '^[0-9]+')
 

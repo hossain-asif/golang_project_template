@@ -79,10 +79,74 @@ Install goose once:
 go install github.com/pressly/goose/v3/cmd/goose@latest
 ```
 
-Then open the Makefile and update DB_URL at the top to match your database. It's hardcoded there — it does not read from .env .
+Then open the Makefile and update `DB_URL` at the top to match your database. It's hardcoded there — it does not read from .env .
+
 
 ```bash
-make migrate-up
+CREATE
+────────────────────────────────────
+create_<table>_table
+
+ALTER COLUMN
+────────────────────────────────────
+add_<column>_to_<table>
+drop_<column>_from_<table>
+rename_<old_column>_to_<new_column>_in_<table>
+change_<table>_<column>_type
+
+FOREIGN KEY
+────────────────────────────────────
+add_<source_table>_<column>_foreign_key_to_<target_table>
+drop_<source_table>_<column>_foreign_key
+
+UNIQUE
+────────────────────────────────────
+add_unique_<table>_<column>
+drop_<table>_<column>_unique
+
+CHECK
+────────────────────────────────────
+add_check_<table>_<business_rule>
+drop_check_<table>_<business_rule>
+
+NOT NULL
+────────────────────────────────────
+add_not_null_<table>_<column>
+drop_not_null_<table>_<column>
+
+DEFAULT
+────────────────────────────────────
+add_default_<table>_<column>
+drop_default_<table>_<column>
+
+INDEX
+────────────────────────────────────
+add_idx_<table>_<column>
+drop_idx_<table>_<column>
+
+TABLE
+────────────────────────────────────
+drop_<table>_table
+rename_<old_table>_to_<new_table>
+```
+
+Example: 
+```bash
+20260212174735_create_<table_name>_table.sql # table name will be plural
+
+20260212174735_add_<column_name>_to_<table_name>.sql 
+
+20260212174735_add_<source_table>_<column_name>_foreign_key_to_<target_table>.sql
+
+20260212175000_add_index_to_<table_name>_<column_name>.sql
+
+```
+
+
+```bash
+gmake migrate-up
+gmake migrate-down
+
 ```
 
 Other migration commands:
@@ -192,7 +256,7 @@ import (
 )
 
 // Package-scoped logger — defined once, reused across all methods.
-var rabbitLog = logger.Log.Scope("config", "database", "rabbitmq")
+var rabbitLog = logger.Log.Scope("config", "resources", "rabbitmq")
 
 // rabbitConfig holds everything needed to reach the broker.
 type rabbitConfig struct {
@@ -277,7 +341,7 @@ go get github.com/rabbitmq/amqp091-go
 
 3. add the app-level wrapper
 
-In `app/resource.go`, alongside `SetupDB` and `SetupRedis`:
+In `app/resources.go`, alongside `SetupDB` and `SetupRedis`:
 
 ```go
 // message broker
@@ -301,7 +365,7 @@ In `internal/pkg/module/module.go`:
 type Dependency struct {
 	DB          *gorm.DB
 	RedisClient *redis.Client
-	Broker      *resource.RabbitMQ
+	Broker      *resources.RabbitMQ
 
 	// add new infra here only
 }
