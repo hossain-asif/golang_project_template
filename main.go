@@ -4,12 +4,12 @@ import (
 	"log"
 
 	"go_project_structure/app"
-	config "go_project_structure/config/env"
+	"go_project_structure/config/env"
 	"go_project_structure/internal/router"
 )
 
 func main() {
-	config.Load()
+	env.Load()
 
 	cfg := app.NewConfig()
 	application := app.NewApplication(cfg, router.Modules)
