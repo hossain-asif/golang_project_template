@@ -93,45 +93,45 @@ create_<table>_table
 
 ALTER COLUMN
 ────────────────────────────────────
-add_<column>_to_<table>
-drop_<column>_from_<table>
-rename_<old_column>_to_<new_column>_in_<table>
-change_<table>_<column>_type
+add_<column>_column_to_<table>_table
+drop_<column>_column_from_<table>_table
+rename_<old_column>_column_to_<new_column>_column_in_<table>_table
+change_<table>_table_<column>_column_type
 
 FOREIGN KEY
 ────────────────────────────────────
-add_<source_table>_<column>_foreign_key_to_<target_table>
-drop_<source_table>_<column>_foreign_key
+add_<source_table>_table_<column>_column_foreign_key_to_<target_table>_table
+drop_<source_table>_table_<column>_column_foreign_key
 
 UNIQUE
 ────────────────────────────────────
-add_unique_<table>_<column>
-drop_<table>_<column>_unique
+add_unique_<table>_table_<column>_column
+drop_<table>_table_<column>_column_unique
 
 CHECK
 ────────────────────────────────────
-add_check_<table>_<business_rule>
-drop_check_<table>_<business_rule>
+add_check_<table>_table_<business_rule>
+drop_check_<table>_table_<business_rule>
 
 NOT NULL
 ────────────────────────────────────
-add_not_null_<table>_<column>
-drop_not_null_<table>_<column>
+add_not_null_<table>_table_<column>_column
+drop_not_null_<table>_table_<column>_column
 
 DEFAULT
 ────────────────────────────────────
-add_default_<table>_<column>
-drop_default_<table>_<column>
+add_default_<table>_table_<column>_column
+drop_default_<table>_table_<column>_column
 
 INDEX
 ────────────────────────────────────
-add_idx_<table>_<column>
-drop_idx_<table>_<column>
+add_idx_<table>_table_<column>_column
+drop_idx_<table>_table_<column>_column
 
 TABLE
 ────────────────────────────────────
 drop_<table>_table
-rename_<old_table>_to_<new_table>
+rename_<old_table>_table_to_<new_table>_table
 ```
 
 Example: 
@@ -140,7 +140,7 @@ Example:
 
 20260212174735_add_<column_name>_to_<table_name>.sql 
 
-20260212174735_add_<source_table>_<column_name>_foreign_key_to_<target_table>.sql
+20260212174735_add_<source_table>_table_<column_name>_column_foreign_key_to_<target_table>_table.sql
 
 20260212175000_add_index_to_<table_name>_<column_name>.sql
 
