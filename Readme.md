@@ -100,8 +100,8 @@ change_<table>_table_<column>_column_type
 
 FOREIGN KEY
 ────────────────────────────────────
-add_<source_table>_table_<column>_column_foreign_key_to_<target_table>_table
-drop_<source_table>_table_<column>_column_foreign_key
+add_foreign_key_<source_table>_<source_column>_to_<referenced_table>_<referenced_column>
+drop_foreign_key_<source_table>_table_<column>_column
 
 UNIQUE
 ────────────────────────────────────
