@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 	"go_project_structure/common_pkg/scheduler"
-	repositories "go_project_structure/internal/db/repositories/user"
+	userrepo "go_project_structure/internal/db/repositories/user"
 	"go_project_structure/internal/pkg/module"
 	"time"
 
@@ -11,12 +11,12 @@ import (
 )
 
 type UserModule struct {
-	repository repositories.UserRepository
+	repository userrepo.UserRepository
 	service    UserService
 }
 
 func (um *UserModule) Initialize(dependency module.Dependency, r chi.Router) ([]scheduler.Task, error) {
-	um.repository = repositories.NewUserRepository(dependency.DB)
+	um.repository = userrepo.NewUserRepository(dependency.DB)
 	um.service = NewUserService(um.repository)
 	handler := NewUserHandler(um.service)
 	router := NewUserRouter(handler)

@@ -8,9 +8,9 @@ import (
 	"go_project_structure/common_pkg/pagination/offset_pagination"
 	"go_project_structure/common_pkg/pagination/seek_pagination"
 	env "go_project_structure/config/env"
-	"go_project_structure/internal/dto"
 	"go_project_structure/internal/db/models"
-	repositories "go_project_structure/internal/db/repositories/user"
+	userrepo "go_project_structure/internal/db/repositories/user"
+	"go_project_structure/internal/dto"
 	"go_project_structure/utils/authentication"
 	"time"
 
@@ -37,11 +37,11 @@ type UserService interface {
 }
 
 type UserServiceImpl struct {
-	userRepository repositories.UserRepository
+	userRepository userrepo.UserRepository
 	userServiceLog *logger.ScopeLogger
 }
 
-func NewUserService(_userRepository repositories.UserRepository) UserService {
+func NewUserService(_userRepository userrepo.UserRepository) UserService {
 	return &UserServiceImpl{
 		userRepository: _userRepository,
 		userServiceLog: logger.Log.Scope("", "user", "user_service"),
