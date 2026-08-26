@@ -1,4 +1,4 @@
-package custom_validation
+package customvalidation
 
 import (
 	"errors"

@@ -2,7 +2,7 @@ package dto
 
 import (
 	"encoding/json"
-	"go_project_structure/utils/custom_validation"
+	customvalidation "go_project_structure/utils/custom_validation"
 	"strconv"
 	"time"
 
@@ -22,7 +22,7 @@ func (r RegisterUserRequest) Validate() error {
 		validation.Field(&r.Name,
 			validation.Required,
 			validation.Length(3, 255),
-			validation.By(custom_validation.NameValidator),
+			validation.By(customvalidation.NameValidator),
 		),
 		validation.Field(&r.Email,
 			validation.Required,
@@ -31,7 +31,7 @@ func (r RegisterUserRequest) Validate() error {
 		validation.Field(&r.Password,
 			validation.Required,
 			validation.Length(8, 20),
-			validation.By(custom_validation.PasswordValidator),
+			validation.By(customvalidation.PasswordValidator),
 		),
 	)
 }
@@ -51,7 +51,7 @@ func (u UpdateUserRequest) Validate() error {
 	return validation.ValidateStruct(&u,
 		validation.Field(&u.Name,
 			validation.Length(3, 255),
-			validation.By(custom_validation.NameValidator),
+			validation.By(customvalidation.NameValidator),
 		),
 		validation.Field(&u.Email,
 			is.Email,
@@ -74,7 +74,7 @@ func (l LoginUserRequest) Validate() error {
 		validation.Field(&l.Password,
 			validation.Required,
 			validation.Length(8, 20),
-			validation.By(custom_validation.PasswordValidator),
+			validation.By(customvalidation.PasswordValidator),
 		),
 	)
 }
@@ -125,13 +125,13 @@ func (u *UserFromTxt) UnmarshalJSON(data []byte) error {
 }
 
 func (u UserFromTxt) MarshalJSON() ([]byte, error) {
-    return json.Marshal(&struct {
-        ID    string `json:"id"`   // ✅ force string output
-        Name  string `json:"name"`
-        Email string `json:"email"`
-    }{
-        ID:    strconv.Itoa(u.ID), // int → "11"
-        Name:  u.Name,
-        Email: u.Email,
-    })
+	return json.Marshal(&struct {
+		ID    string `json:"id"` // ✅ force string output
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}{
+		ID:    strconv.Itoa(u.ID), // int → "11"
+		Name:  u.Name,
+		Email: u.Email,
+	})
 }
