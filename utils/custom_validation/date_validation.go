@@ -7,14 +7,16 @@ import (
 )
 
 var MaxRangeDays = 60
+const LocalTimeLayout = "2006-01-02T15:04:05"
 
 var (
 	ErrStartDateRequired = errors.New("start date is required")
 	ErrEndDateRequired   = errors.New("end date is required")
-	ErrStartDateInPast   = errors.New("start date cannot be in the past")
-	ErrEndDateInPast   = errors.New("end date cannot be in the past")
+	ErrStartDateInPast   = errors.New("start date must be in the future")
+	ErrEndDateInPast   = errors.New("end date must be in the future")
 	ErrEndBeforeStart    = errors.New("end date cannot be before start date")
 	ErrRangeTooLong      = fmt.Errorf("date range cannot be longer than %d days", MaxRangeDays)
+	ErrInvalidTimeZone = errors.New("invalid time zone, use an IANA name like Asia/Dhaka")
 )
 
 func ValidateDateRange(startDate, endDate time.Time) (time.Time, time.Time, error) {
@@ -26,6 +28,13 @@ func ValidateDateRange(startDate, endDate time.Time) (time.Time, time.Time, erro
 	if endDate.IsZero() {
 		return time.Time{}, time.Time{}, ErrEndDateRequired
 	}
+
+	today := time.Now()
+
+	startDate, _ = ParseLocalTime(startDate.Format(time.RFC3339), "Local")
+	endDate, _ = ParseLocalTime(endDate.Format(time.RFC3339), "Local")
+	today, _ = ParseLocalTime(today.Format(time.RFC3339), "Local")
+
 
 	startDateYear, startDateMonth, startDateDay := startDate.Date()
 	formatedStartDate := time.Date(startDateYear, startDateMonth, startDateDay, 0, 0, 0, 0, time.UTC)
@@ -54,9 +63,26 @@ func ValidateDateRange(startDate, endDate time.Time) (time.Time, time.Time, erro
 		return time.Time{}, time.Time{}, ErrRangeTooLong
 	}
 
-	if dateRange == 0 {
-		formatedEndDate = formatedEndDate.AddDate(0, 0, 1)
-	}
+	// if dateRange == 0 {
+	// 	formatedEndDate = formatedEndDate.AddDate(0, 0, 1)
+	// }
 
 	return formatedStartDate, formatedEndDate, nil
+}
+
+
+func ParseLocalTime(value, timeZoneName string) (time.Time, error) {
+	timeZoneName = "Local"
+	loc, err := time.LoadLocation(timeZoneName)
+	if err != nil {
+		return time.Time{}, ErrInvalidTimeZone
+	}
+
+	t, err := time.ParseInLocation(LocalTimeLayout, value, loc)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid time %q, expected format %s", value, LocalTimeLayout)
+	}
+
+	return t.UTC(), nil
+
 }
