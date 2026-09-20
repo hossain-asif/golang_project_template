@@ -19,23 +19,23 @@ func (app *Application) RunServer(ctx context.Context, handler http.Handler) err
 	// Graceful shutdown goroutine
 	go func() {
 		<-ctx.Done()
-		appLog.Method("runServer").Warn("shutdown signal received, stopping server...")
+		applicationLog.Method("runServer").Warn("shutdown signal received, stopping server...")
 
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer shutdownCancel()
 
 		if err := server.Shutdown(shutdownCtx); err != nil {
-			appLog.Method("runServer").WithError(err).Error("graceful shutdown failed.")
+			applicationLog.Method("runServer").WithError(err).Error("graceful shutdown failed.")
 		}
 	}()
 
-	appLog.Method("runServer").Infof("server running on port: %s", app.Config.Addr)
+	applicationLog.Method("runServer").Infof("server running on port: %s", app.Config.Addr)
 
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
-		appLog.Method("runServer").WithError(err).Error("server initialization failed.")
+		applicationLog.Method("runServer").WithError(err).Error("server initialization failed.")
 		return err
 	}
 
-	appLog.Method("runServer").Info("server stopped.")
+	applicationLog.Method("runServer").Info("server stopped.")
 	return nil
 }

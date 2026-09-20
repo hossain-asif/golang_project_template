@@ -113,3 +113,13 @@ func (m *MongoDB) Fire(entry *logrus.Entry) error {
 func (m *MongoDB) Levels() []logrus.Level {
 	return logrus.AllLevels
 }
+
+
+func setupMongoHook() (*MongoDB, error) {
+	hook, err := SetupMongoDB()
+	if err != nil {
+		return nil, fmt.Errorf("mongo hook setup: %w", err)
+	}
+	logger.AddHook(hook)
+	return hook, nil
+}

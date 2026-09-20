@@ -5,14 +5,13 @@ import (
 
 	"go_project_structure/app"
 	"go_project_structure/config/env"
-	"go_project_structure/internal/router"
 )
 
 func main() {
 	env.Load()
 
 	cfg := app.NewConfig()
-	application := app.NewApplication(cfg, router.Modules)
+	application := app.NewApplication(cfg)
 
 	if err := application.Run(); err != nil {
 		log.Fatal(err)

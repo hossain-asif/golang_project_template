@@ -77,7 +77,7 @@ func SetupDB() (*gorm.DB, error) {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
 
-	// Retrieve the underlying *sql.DB to verify connectivity.
+	// Retrieve the underlying *gorm.DB to verify connectivity.
 	sqlDB, err := db.DB()
 	if err != nil {
 		log.WithError(err).Error("Failed to get underlying sql.DB.")
