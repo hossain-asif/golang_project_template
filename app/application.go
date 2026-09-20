@@ -41,7 +41,7 @@ func (app *Application) Run() error {
 
 	logger.InitializeLogger()
 
-	rootRouter, err := di.BuildApplicationModules(ctx)
+	rootRouter, err := di.BuildApplication(ctx)
 	if err != nil {
 		return err
 	}

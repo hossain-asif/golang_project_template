@@ -1,4 +1,4 @@
-package dependency
+package di
 
 import (
 	"go_project_structure/config/resources"
@@ -7,26 +7,23 @@ import (
 	"gorm.io/gorm"
 )
 
-type Dependency struct {
+type Dependencies struct {
 	DB          *gorm.DB
 	RedisClient *redis.Client
-
-	// add new infra here only
-	// Redis *redis.Client
 }
 
-func NewDependency(db *gorm.DB, redisClient *redis.Client) Dependency {
-	return Dependency{
+func NewDependencies(db *gorm.DB, redisClient *redis.Client) Dependencies {
+	return Dependencies{
 		DB:          db,
 		RedisClient: redisClient,
 	}
 }
 
-func LoadDependency() (Dependency, error) {
+func LoadDependencies() (Dependencies, error) {
 	// db setup
 	db, err := resources.SetupDB()
 	if err != nil {
-		return Dependency{}, err
+		return Dependencies{}, err
 	}
 
 	// Connect MongoDB as a logrus hook (uncomment when needed)
@@ -39,10 +36,10 @@ func LoadDependency() (Dependency, error) {
 	// redis setup
 	redisClient, err := resources.SetupRedis()
 	if err != nil {
-		return Dependency{}, err
+		return Dependencies{}, err
 	}
 
-	dep := Dependency{
+	dep := Dependencies{
 		DB:          db,
 		RedisClient: redisClient,
 	}

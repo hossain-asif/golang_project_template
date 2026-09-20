@@ -3,21 +3,31 @@ package di
 import (
 	"context"
 	"go_project_structure/common_pkg/scheduler"
-	"go_project_structure/di/dependency"
-	"go_project_structure/di/module"
+	"go_project_structure/internal/example"
+	"go_project_structure/internal/identity"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func BuildApplicationModules(ctx context.Context) (*chi.Mux, error) {
-	modules := module.NewDomainModules(module.BuildModules())
+func BuildModules(deps Dependencies) []Module {
+	return []Module{
+		identity.NewModule(deps.DB),
+		example.NewModule(deps.DB),
+	}
+}
 
-	dep, err := dependency.LoadDependency()
+func BuildApplication(ctx context.Context) (*chi.Mux, error) {
+
+	dependencies, err := LoadDependencies()
 	if err != nil {
 		return nil, err
 	}
 
-	rootRouter, allTasks, err := modules.SetupDomainModules(dep)
+	mods := BuildModules(dependencies)
+
+	modules := NewModules(mods)
+
+	rootRouter, allTasks, err := modules.SetupModules(dependencies)
 	if err != nil {
 		return nil, err
 	}
