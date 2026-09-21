@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"go_project_structure/common_pkg/json"
 	"go_project_structure/common_pkg/logger"
-	"go_project_structure/internal/db/models"
-	"go_project_structure/internal/dto/identity"
+	identityDTO "go_project_structure/internal/dto/identity"
+	"go_project_structure/internal/repository/user"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -41,7 +41,7 @@ func (uc *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := &models.User{
+	user := &user.User{
 		Name:     RequestPayload.Name,
 		Email:    RequestPayload.Email,
 		Password: RequestPayload.Password,

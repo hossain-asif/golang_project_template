@@ -1,4 +1,4 @@
-package models
+package example
 
 import (
 	"gorm.io/gorm"
@@ -6,4 +6,5 @@ import (
 
 type Example struct {
 	gorm.Model
+	// rfu string `gorm:"size:255;not null"`
 }

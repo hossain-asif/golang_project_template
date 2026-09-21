@@ -3,7 +3,6 @@ package di
 import (
 	"context"
 	"go_project_structure/common_pkg/scheduler"
-	"go_project_structure/internal/example"
 	"go_project_structure/internal/identity"
 
 	"github.com/go-chi/chi/v5"
@@ -12,7 +11,7 @@ import (
 func BuildModules(deps Dependencies) []Module {
 	return []Module{
 		identity.NewModule(deps.DB),
-		example.NewModule(deps.DB),
+		// example.NewModule(deps.DB),
 	}
 }
 

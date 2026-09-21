@@ -3,7 +3,6 @@ package example
 import (
 	"context"
 	"go_project_structure/common_pkg/logger"
-	"go_project_structure/internal/db/models"
 
 	"gorm.io/gorm"
 )
@@ -24,15 +23,10 @@ func NewRepository(_db *gorm.DB) Repository {
 	}
 }
 
-func (u *RepositoryImpl) Get(ctx context.Context) error {
+func (u *RepositoryImpl) Get(ctx context.Context) error{
 	log := u.Log.Method("Get").WithContext(ctx)
 
-	result := u.db.First(&models.Example{})
-
-	if result.Error != nil {
-		log.Errorf("Error getting Example: %v\n", result.Error)
-		return result.Error
-	}
-
+	log.Infof("Fetching example data from the database")
 	return nil
+
 }

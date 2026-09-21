@@ -1,7 +1,8 @@
 package example
 
 import (
-	"go_project_structure/internal/pkg/middlewares"
+	"go_project_structure/internal/middleware/auth"
+	"go_project_structure/internal/middleware/requestlogger"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -25,12 +26,12 @@ func (ur *router) Register(r chi.Router) {
 func (ur *router) v1() http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(middlewares.RequestLoggerMiddleware)
+	r.Use(requestlogger.RequestLoggerMiddleware)
 
 	r.Group(func(r chi.Router) {
-		r.Use(middlewares.JwtAuthMiddleware)
+		r.Use(auth.JwtAuthMiddleware)
 
-		r.Get("/example", ur.handler.Get)
+		r.Get("/expl", ur.handler.Get)
 
 	})
 
@@ -40,12 +41,12 @@ func (ur *router) v1() http.Handler {
 func (ur *router) v2() http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(middlewares.RequestLoggerMiddleware)
+	r.Use(requestlogger.RequestLoggerMiddleware)
 
 	// Protected (JWT required)
 	r.Group(func(r chi.Router) {
-		r.Use(middlewares.JwtAuthMiddleware)
-		r.Get("/example", ur.handler.Get)
+		r.Use(auth.JwtAuthMiddleware)
+		r.Get("/expl", ur.handler.Get)
 	})
 
 	return r

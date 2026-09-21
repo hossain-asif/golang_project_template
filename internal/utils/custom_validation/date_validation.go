@@ -29,11 +29,11 @@ func ValidateDateRange(startDate, endDate time.Time) (time.Time, time.Time, erro
 		return time.Time{}, time.Time{}, ErrEndDateRequired
 	}
 
-	today := time.Now()
+	// today := time.Now()
 
 	startDate, _ = ParseLocalTime(startDate.Format(time.RFC3339), "Local")
 	endDate, _ = ParseLocalTime(endDate.Format(time.RFC3339), "Local")
-	today, _ = ParseLocalTime(today.Format(time.RFC3339), "Local")
+	// today, _ = ParseLocalTime(today.Format(time.RFC3339), "Local")
 
 
 	startDateYear, startDateMonth, startDateDay := startDate.Date()
@@ -72,7 +72,10 @@ func ValidateDateRange(startDate, endDate time.Time) (time.Time, time.Time, erro
 
 
 func ParseLocalTime(value, timeZoneName string) (time.Time, error) {
-	timeZoneName = "Local"
+	if timeZoneName == "" {
+		timeZoneName = "Local"
+	}
+	
 	loc, err := time.LoadLocation(timeZoneName)
 	if err != nil {
 		return time.Time{}, ErrInvalidTimeZone

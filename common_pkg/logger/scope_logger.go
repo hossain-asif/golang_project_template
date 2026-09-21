@@ -2,7 +2,7 @@ package logger
 
 import (
 	"context"
-	"go_project_structure/utils/enums"
+	"go_project_structure/internal/utils/enums"
 
 	"github.com/sirupsen/logrus"
 )
@@ -135,8 +135,6 @@ func (s *ScopeLogger) WithError(err error) *logrus.Entry {
 	return Log.Logger.WithFields(s.fields()).WithError(err)
 }
 
-
-
 // gorm logger adapter to use our ScopeLogger with gorm's logging interface
 type GormLogWriter struct {
 	Logger *ScopeLogger // or whatever your logger type is
@@ -151,7 +149,6 @@ func (s *GormLogWriter) Method(method string) *ScopeLogger {
 		ctx:       s.Logger.ctx,
 	}
 }
-
 
 func (w GormLogWriter) Info(context context.Context, msg string, args ...interface{}) {
 	w.Logger.WithContext(context).Infof(msg, args...)

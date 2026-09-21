@@ -1,4 +1,4 @@
-package middlewares
+package ratelimit
 
 import (
 	"go_project_structure/common_pkg/json"

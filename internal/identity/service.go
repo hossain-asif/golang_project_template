@@ -5,19 +5,18 @@ import (
 	"fmt"
 	"go_project_structure/common_pkg/logger"
 	env "go_project_structure/config/env"
-	"go_project_structure/internal/db/models"
-	"go_project_structure/internal/db/repositories/user"
-	"go_project_structure/internal/dto/identity"
-	"go_project_structure/utils/authentication"
+	identityDTO "go_project_structure/internal/dto/identity"
+	"go_project_structure/internal/repository/user"
+	"go_project_structure/internal/utils/authentication"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type Service interface {
-	CreateUser(ctx context.Context, user *models.User) (string, error)
+	CreateUser(ctx context.Context, user *user.User) (string, error)
 	LoginUser(ctx context.Context, loginPayload *identityDTO.LoginUserRequest) (string, error)
-	GetUserById(ctx context.Context, id string) (*models.User, error)
-	GetAllUsers(ctx context.Context) ([]*models.User, error)
+	GetUserById(ctx context.Context, id string) (*user.User, error)
+	GetAllUsers(ctx context.Context) ([]*user.User, error)
 	UpdateUser(ctx context.Context, id string, updatePayload *identityDTO.UpdateUserRequest) (string, error)
 	DeleteUser(ctx context.Context, id string) (string, error)
 	PermanentlyDeleteUser(ctx context.Context, id string) (string, error)
@@ -35,7 +34,7 @@ func NewService(_userRepository user.Repository) Service {
 	}
 }
 
-func (us *ServiceImpl) CreateUser(ctx context.Context, user *models.User) (string, error) {
+func (us *ServiceImpl) CreateUser(ctx context.Context, user *user.User) (string, error) {
 	log := us.Log.Method("CreateUser").WithContext(ctx)
 
 	password, hashErr := authentication.HashPassword(user.Password)
@@ -82,7 +81,7 @@ func (us *ServiceImpl) LoginUser(ctx context.Context, loginPayload *identityDTO.
 	return tokenString, nil
 }
 
-func (us *ServiceImpl) GetUserById(ctx context.Context, id string) (*models.User, error) {
+func (us *ServiceImpl) GetUserById(ctx context.Context, id string) (*user.User, error) {
 	log := us.Log.Method("GetUserById").WithContext(ctx)
 
 	user, err := us.userRepository.GetByID(ctx, id)
@@ -94,7 +93,7 @@ func (us *ServiceImpl) GetUserById(ctx context.Context, id string) (*models.User
 	return user, nil
 }
 
-func (us *ServiceImpl) GetAllUsers(ctx context.Context) ([]*models.User, error) {
+func (us *ServiceImpl) GetAllUsers(ctx context.Context) ([]*user.User, error) {
 	log := us.Log.Method("GetAllUsers").WithContext(ctx)
 
 	users, err := us.userRepository.GetAll(ctx)

@@ -3,8 +3,8 @@ package example
 import (
 	"context"
 	"go_project_structure/common_pkg/scheduler"
+	"go_project_structure/internal/repository/example"
 
-	"go_project_structure/internal/db/repositories/example"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -33,11 +33,14 @@ func (um *Module) Initialize(r chi.Router) ([]scheduler.Task, error) {
 
 	return []scheduler.Task{
 		{
-			Name:     "example.sync-all",
+			Name:     "example.",
 			Interval: 24 * time.Hour,
 			Fn: func(ctx context.Context) error {
 				err := um.repository.Get(ctx)
-				return err
+				if err != nil {
+					return err
+				}
+				return nil
 			},
 		},
 		{
@@ -45,7 +48,10 @@ func (um *Module) Initialize(r chi.Router) ([]scheduler.Task, error) {
 			Interval: 50 * time.Minute,
 			Fn: func(ctx context.Context) error {
 				err := um.service.Get(ctx)
-				return err
+				if err != nil {
+					return err
+				}
+				return nil
 			},
 		},
 	}, nil

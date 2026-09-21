@@ -1,4 +1,4 @@
-package middlewares
+package auth
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"go_project_structure/common_pkg/json"
 	"go_project_structure/common_pkg/logger"
 	env "go_project_structure/config/env"
-	enums "go_project_structure/utils/enums"
+	"go_project_structure/internal/utils/enums"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -18,7 +18,7 @@ var jwtAuthMiddlewareLogger = logger.Log.Scope("", "middleware", "jwt_auth_middl
 func JwtAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log := jwtAuthMiddlewareLogger.Method("JwtAuthMiddleware").WithContext(r.Context())
-		
+
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			log.Errorf("Authorization header missing")

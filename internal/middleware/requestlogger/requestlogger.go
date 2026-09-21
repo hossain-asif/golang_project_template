@@ -1,9 +1,9 @@
-package middlewares
+package requestlogger
 
 import (
 	"context"
 	"go_project_structure/common_pkg/logger"
-	enums "go_project_structure/utils/enums"
+	"go_project_structure/internal/utils/enums"
 	"net/http"
 	"time"
 

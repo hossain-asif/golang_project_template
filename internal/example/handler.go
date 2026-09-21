@@ -21,10 +21,12 @@ func NewHandler(_service Service) *Handler {
 func (uc *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	log := uc.Log.WithContext(r.Context()).Method("Get")
 
+	log.Infof("Fetching example data from the handler layer")
+
 	err := uc.service.Get(r.Context())
 	if err != nil {
-		log.Errorf("Example fetch failed. %v", err)
-		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "Example fetch failed.", err)
+		log.Errorf("error fetching example data from the handler layer: %v", err)
+		json.WriteJsonErrorResponse(w, http.StatusInternalServerError, "error fetching example data from the handler layer", err)
 		return
 	}
 

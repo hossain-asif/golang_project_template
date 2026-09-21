@@ -3,8 +3,8 @@ package identity
 import (
 	"context"
 	"go_project_structure/common_pkg/scheduler"
+	"go_project_structure/internal/repository/user"
 
-	"go_project_structure/internal/db/repositories/user"
 	"time"
 
 	"github.com/go-chi/chi/v5"

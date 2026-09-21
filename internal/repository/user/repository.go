@@ -4,39 +4,38 @@ import (
 	"context"
 	"fmt"
 	"go_project_structure/common_pkg/logger"
-	"go_project_structure/internal/db/models"
-	"go_project_structure/internal/dto/identity"
-	"go_project_structure/utils/pg"
+	identityDTO "go_project_structure/internal/dto/identity"
+	"go_project_structure/internal/utils/pg"
 
 	"gorm.io/gorm"
 )
 
 type Repository interface {
-	Create(ctx context.Context, user *models.User) (string, error)
-	GetByID(ctx context.Context, id string) (*models.User, error)
-	GetAll(ctx context.Context) ([]*models.User, error)
+	Create(ctx context.Context, user *User) (string, error)
+	GetByID(ctx context.Context, id string) (*User, error)
+	GetAll(ctx context.Context) ([]*User, error)
 	Update(ctx context.Context, id string, updatePayload *identityDTO.UpdateUserRequest) (string, error)
 	SoftDelete(ctx context.Context, id string) (string, error)
 	HardDelete(ctx context.Context, id string) (string, error)
 
 	// user specific methods
-	GetByEmail(ctx context.Context, email string) (*models.User, error)
+	GetByEmail(ctx context.Context, email string) (*User, error)
 }
 
 type RepositoryImpl struct {
 	// Add fields for database connection, etc.
-	db                *gorm.DB
+	db            *gorm.DB
 	repositoryLog *logger.GormLogWriter
 }
 
 func NewRepository(_db *gorm.DB) Repository {
 	return &RepositoryImpl{
-		db:                _db,
+		db:            _db,
 		repositoryLog: &logger.GormLogWriter{Logger: logger.Log.Scope("repository", "gorm", "user_repository")},
 	}
 }
 
-func (u *RepositoryImpl) Create(ctx context.Context, user *models.User) (string, error) {
+func (u *RepositoryImpl) Create(ctx context.Context, user *User) (string, error) {
 	log := u.repositoryLog.Method("Create").WithContext(ctx)
 
 	// step 1: prepare the query
@@ -61,14 +60,14 @@ func (u *RepositoryImpl) Create(ctx context.Context, user *models.User) (string,
 
 		log.Error("No user was created.")
 
-		return "", fmt.Errorf("No user was created.")
+		return "", fmt.Errorf("no user was created")
 	}
 
 	// step 5: return the result
 	return fmt.Sprintf("Created user (rows affected: %d)\n", rowsAffected), nil
 }
 
-func (u *RepositoryImpl) GetByID(ctx context.Context, id string) (*models.User, error) {
+func (u *RepositoryImpl) GetByID(ctx context.Context, id string) (*User, error) {
 	log := u.repositoryLog.Method("GetByID").WithContext(ctx)
 
 	// step 1: prepare the query
@@ -78,7 +77,7 @@ func (u *RepositoryImpl) GetByID(ctx context.Context, id string) (*models.User, 
 	row := u.db.Raw(query, id).Row()
 
 	// step 3: process the result
-	user := &models.User{}
+	user := &User{}
 	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -93,7 +92,7 @@ func (u *RepositoryImpl) GetByID(ctx context.Context, id string) (*models.User, 
 	return user, nil
 }
 
-func (u *RepositoryImpl) GetAll(ctx context.Context) ([]*models.User, error) {
+func (u *RepositoryImpl) GetAll(ctx context.Context) ([]*User, error) {
 	log := u.repositoryLog.Method("GetAll").WithContext(ctx)
 
 	// step 1: prepare the query
@@ -120,9 +119,9 @@ func (u *RepositoryImpl) GetAll(ctx context.Context) ([]*models.User, error) {
 	// }
 
 	// step 4: process the result
-	var users []*models.User
+	var users []*User
 	for rows.Next() {
-		var user models.User
+		var user User
 		err := u.db.ScanRows(rows, &user)
 		if err != nil {
 			log.Errorf("Error scanning row: %v\n", err)
@@ -166,7 +165,7 @@ func (u *RepositoryImpl) Update(ctx context.Context, id string, updatePayload *i
 	rowsAffected := result.RowsAffected
 	if rowsAffected == 0 {
 		log.Errorf("No user was updated.")
-		return "", fmt.Errorf("No user was updated.")
+		return "", fmt.Errorf("no user was updated")
 	}
 
 	// step 5: return the result
@@ -192,7 +191,7 @@ func (u *RepositoryImpl) SoftDelete(ctx context.Context, id string) (string, err
 	rowsAffected := result.RowsAffected
 	if rowsAffected == 0 {
 		log.Errorf("No user was deleted.")
-		return "", fmt.Errorf("No user was deleted.")
+		return "", fmt.Errorf("no user was deleted")
 	}
 
 	// step 5: return the result
@@ -218,14 +217,14 @@ func (u *RepositoryImpl) HardDelete(ctx context.Context, id string) (string, err
 	rowsAffected := result.RowsAffected
 	if rowsAffected == 0 {
 		log.Errorf("No user was deleted.")
-		return "", fmt.Errorf("No user was deleted.")
+		return "", fmt.Errorf("no user was deleted")
 	}
 
 	// step 5: return the result
 	return fmt.Sprintf("Deleted user (rows affected: %d)\n", rowsAffected), nil
 }
 
-func (u *RepositoryImpl) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+func (u *RepositoryImpl) GetByEmail(ctx context.Context, email string) (*User, error) {
 	log := u.repositoryLog.Method("GetByEmail").WithContext(ctx)
 
 	// step 1: prepare the query
@@ -235,14 +234,14 @@ func (u *RepositoryImpl) GetByEmail(ctx context.Context, email string) (*models.
 	row := u.db.Raw(query, email).Row()
 
 	// step 3: process the result
-	user := &models.User{}
+	user := &User{}
 	err := row.Scan(&user.Name, &user.Email, &user.Password)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			log.Errorf("User not found.")
 			return nil, err
 		}
-		log.Errorf("Error fetching user: %v\n", err)
+		log.Errorf("error fetching user: %v\n", err)
 		return nil, err
 	}
 

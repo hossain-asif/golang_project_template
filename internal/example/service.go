@@ -3,7 +3,7 @@ package example
 import (
 	"context"
 	"go_project_structure/common_pkg/logger"
-	"go_project_structure/internal/db/repositories/example"
+	"go_project_structure/internal/repository/example"
 )
 
 type Service interface {
@@ -27,9 +27,11 @@ func (us *ServiceImpl) Get(ctx context.Context) error {
 
 	err := us.exampleRepository.Get(ctx)
 	if err != nil {
-		log.Errorf("Error getting Example: %v\n", err)
+		log.Errorf("error fetching example data from the service layer: %v", err)
 		return err
 	}
 
+	log.Infof("Fetching example data from the service layer")
 	return nil
+
 }

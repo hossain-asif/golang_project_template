@@ -1,7 +1,7 @@
 package identityDTO
 
 import (
-	customvalidation "go_project_structure/utils/custom_validation"
+	customvalidation "go_project_structure/internal/utils/custom_validation"
 
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"

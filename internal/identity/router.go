@@ -2,7 +2,9 @@ package identity
 
 import (
 	"go_project_structure/common_pkg/proxy"
-	"go_project_structure/internal/pkg/middlewares"
+	"go_project_structure/internal/middleware/auth"
+	"go_project_structure/internal/middleware/ratelimit"
+	"go_project_structure/internal/middleware/requestlogger"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -26,7 +28,7 @@ func (ur *router) Register(r chi.Router) {
 func (ur *router) v1() http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(middlewares.RequestLoggerMiddleware)
+	r.Use(requestlogger.RequestLoggerMiddleware)
 
 	// Public
 	r.Post("/signup", ur.handler.RegisterUser)
@@ -34,12 +36,12 @@ func (ur *router) v1() http.Handler {
 
 	// Protected (JWT required)
 	r.Group(func(r chi.Router) {
-		r.Use(middlewares.JwtAuthMiddleware)
+		r.Use(auth.JwtAuthMiddleware)
 
 		r.Route("/profile/{id}", func(r chi.Router) {
 			r.Get("/", ur.handler.GetUserById)
 			r.Delete("/", ur.handler.DeleteUser)
-			r.With(middlewares.RateLimitMiddleware).
+			r.With(ratelimit.RateLimitMiddleware).
 				Patch("/", ur.handler.UpdateUser)
 		})
 
@@ -56,7 +58,7 @@ func (ur *router) v1() http.Handler {
 func (ur *router) v2() http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(middlewares.RequestLoggerMiddleware)
+	r.Use(requestlogger.RequestLoggerMiddleware)
 
 	// Public
 	r.Post("/signup", ur.handler.RegisterUser)
@@ -64,13 +66,13 @@ func (ur *router) v2() http.Handler {
 
 	// Protected (JWT required)
 	r.Group(func(r chi.Router) {
-		r.Use(middlewares.JwtAuthMiddleware)
+		r.Use(auth.JwtAuthMiddleware)
 		r.Get("/profile", ur.handler.GetAllUsers)
 
 		r.Route("/profile/{id}", func(r chi.Router) {
 			r.Get("/", ur.handler.GetUserById)
 			r.Delete("/", ur.handler.DeleteUser)
-			r.With(middlewares.RateLimitMiddleware).
+			r.With(ratelimit.RateLimitMiddleware).
 				Patch("/", ur.handler.UpdateUser)
 		})
 	})
